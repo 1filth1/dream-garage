@@ -10,402 +10,166 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
 <style>
   :root {
-    --bg: #0f1419;
-    --panel: #1a2028;
-    --panel-2: #232b36;
-    --border: #2d3642;
-    --text: #e6edf3;
-    --muted: #8b949e;
-    --accent: #3b82f6;
-    --ok: #10b981;
-    --warn: #f59e0b;
-    --info: #6366f1;
-    --err: #ef4444;
-    --purple: #a855f7;
-    --cyan: #06b6d4;
+    --bg: #0f1419; --panel: #1a2028; --panel-2: #232b36; --border: #2d3642;
+    --text: #e6edf3; --muted: #8b949e; --accent: #3b82f6; --ok: #10b981;
+    --warn: #f59e0b; --info: #6366f1; --err: #ef4444; --purple: #a855f7; --cyan: #06b6d4;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 20px;
-  }
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
   h1 { font-size: 24px; font-weight: 700; letter-spacing: 0.5px; }
   h1 span { color: var(--accent); font-style: italic; }
   .header-right { display: flex; gap: 10px; align-items: center; }
   .clock { color: var(--muted); font-size: 14px; }
-  .sync-status {
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 10px;
-    background: var(--panel-2);
-  }
+  .sync-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; background: var(--panel-2); }
   .sync-status.connected { color: var(--ok); }
   .sync-status.disconnected { color: var(--err); }
 
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  .stat {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-  }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
   .stat-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-value { font-size: 28px; font-weight: 700; margin-top: 6px; }
-  .stat-value.ok { color: var(--ok); }
-  .stat-value.warn { color: var(--warn); }
-  .stat-value.accent { color: var(--accent); }
+  .stat-value.ok { color: var(--ok); } .stat-value.warn { color: var(--warn); } .stat-value.accent { color: var(--accent); }
 
-  .grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 20px;
-  }
+  .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
   @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  .panel h2 {
-    font-size: 16px;
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .panel h2 { font-size: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 
   .posts-list { display: flex; flex-direction: column; gap: 12px; }
-  .post-row {
-    background: var(--panel-2);
-    border-radius: 10px;
-    padding: 16px;
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    gap: 16px;
-    align-items: center;
-    border-left: 4px solid var(--border);
-    transition: all 0.2s;
-  }
-  @media (max-width: 600px) {
-    .post-row { grid-template-columns: 1fr auto; }
-    .post-timer, .post-deadline { grid-column: 1 / -1; }
-  }
-  .post-row.free { border-left-color: var(--ok); }
-  .post-row.busy { border-left-color: var(--warn); }
-  .post-row.waiting { border-left-color: var(--info); }
-
+  .post-row { background: var(--panel-2); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 1fr auto auto auto; gap: 16px; align-items: center; border-left: 4px solid var(--border); transition: all 0.2s; }
+  @media (max-width: 600px) { .post-row { grid-template-columns: 1fr auto; } .post-timer, .post-deadline { grid-column: 1 / -1; } }
+  .post-row.free { border-left-color: var(--ok); } .post-row.busy { border-left-color: var(--warn); } .post-row.waiting { border-left-color: var(--info); }
   .post-main { display: flex; flex-direction: column; gap: 4px; }
   .post-name { font-weight: 600; font-size: 15px; }
-  .post-info { font-size: 13px; color: var(--muted); }
-  .post-info.active { color: var(--text); }
-
-  .post-timer {
-    font-size: 20px;
-    font-weight: 700;
-    font-family: 'Courier New', monospace;
-    min-width: 80px;
-    text-align: center;
-  }
-  .post-timer.active { color: var(--warn); }
-  .post-timer.idle { color: var(--muted); font-size: 14px; }
-
-  .post-deadline {
-    font-size: 13px;
-    font-weight: 600;
-    font-family: 'Courier New', monospace;
-    padding: 4px 10px;
-    border-radius: 6px;
-    text-align: center;
-    min-width: 90px;
-  }
+  .post-info { font-size: 13px; color: var(--muted); } .post-info.active { color: var(--text); }
+  .post-timer { font-size: 20px; font-weight: 700; font-family: 'Courier New', monospace; min-width: 80px; text-align: center; }
+  .post-timer.active { color: var(--warn); } .post-timer.idle { color: var(--muted); font-size: 14px; }
+  .post-deadline { font-size: 13px; font-weight: 600; font-family: 'Courier New', monospace; padding: 4px 10px; border-radius: 6px; text-align: center; min-width: 90px; }
   .post-deadline.ok { background: rgba(16,185,129,0.15); color: var(--ok); }
   .post-deadline.warn { background: rgba(245,158,11,0.15); color: var(--warn); }
   .post-deadline.err { background: rgba(239,68,68,0.2); color: var(--err); }
 
-  .badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
   .badge.free { background: rgba(16,185,129,0.2); color: var(--ok); }
   .badge.busy { background: rgba(245,158,11,0.2); color: var(--warn); }
   .badge.waiting { background: rgba(99,102,241,0.2); color: var(--info); }
 
-  .btn {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s;
-  }
+  .btn { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
   .btn:hover { opacity: 0.85; transform: translateY(-1px); }
   .btn.small { padding: 6px 10px; font-size: 11px; }
-  .btn.danger { background: var(--err); }
-  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-  .btn.purple { background: var(--purple); }
-  .btn.ok { background: var(--ok); }
-  .btn.cyan { background: var(--cyan); }
+  .btn.danger { background: var(--err); } .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn.purple { background: var(--purple); } .btn.ok { background: var(--ok); } .btn.cyan { background: var(--cyan); }
   .btn.admin { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  .btn.warn { background: var(--warn); }
 
-  .action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 16px;
-  }
-  .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 18px 20px;
-    border-radius: 12px;
-    border: none;
-    color: white;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  }
+  .action-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+  .action-btn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 18px 20px; border-radius: 12px; border: none; color: white; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
   .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
-  .action-btn:active { transform: translateY(0); }
   .action-btn.order { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
   .action-btn.booking { background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); }
   .action-btn.repair { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
   .action-btn .icon { font-size: 20px; }
 
   .list { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
-  .item {
-    background: var(--panel-2);
-    border-radius: 8px;
-    padding: 12px;
-    border-left: 3px solid var(--accent);
-  }
+  .item { background: var(--panel-2); border-radius: 8px; padding: 12px; border-left: 3px solid var(--accent); }
   .item.repair-zone { border-left-color: var(--cyan); }
   .item.queue-item { border-left-color: var(--info); }
   .item-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
   .item-main { font-weight: 600; margin-bottom: 4px; }
   .item-sub { font-size: 12px; color: var(--muted); }
 
-  .deadline-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    font-family: 'Courier New', monospace;
-    margin-left: 6px;
-  }
+  .deadline-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: 'Courier New', monospace; margin-left: 6px; }
   .deadline-badge.ok { background: rgba(16,185,129,0.2); color: var(--ok); }
   .deadline-badge.warn { background: rgba(245,158,11,0.2); color: var(--warn); }
   .deadline-badge.err { background: rgba(239,68,68,0.2); color: var(--err); animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: 0.6; } }
 
-  .modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
   .modal.open { display: flex; }
-  .modal-content {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
+  .modal-content { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
   .modal-content.large { max-width: 900px; }
   .modal-content h3 { margin-bottom: 16px; }
   .form-group { margin-bottom: 14px; }
   .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  .form-group input, .form-group select, .form-group textarea {
-    width: 100%;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: inherit;
-  }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 14px; font-family: inherit; }
   .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
-
   .empty { color: var(--muted); text-align: center; padding: 20px; font-size: 13px; }
 
   .masters-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-  .master-item {
-    background: var(--panel-2);
-    border-radius: 8px;
-    padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-  }
-  .master-info { flex: 1; }
-  .master-name { font-weight: 600; margin-bottom: 2px; }
-  .master-phone { font-size: 12px; color: var(--muted); }
+  .master-item { background: var(--panel-2); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .master-info { flex: 1; } .master-name { font-weight: 600; margin-bottom: 2px; } .master-phone { font-size: 12px; color: var(--muted); }
   .master-actions { display: flex; gap: 6px; }
 
-  .booking-item {
-    background: var(--panel-2);
-    border-radius: 8px;
-    padding: 12px;
-    border-left: 3px solid var(--purple);
-    margin-bottom: 10px;
-  }
-  .booking-time {
-    font-size: 12px;
-    color: var(--purple);
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .booking-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-  }
+  .booking-item { background: var(--panel-2); border-radius: 8px; padding: 12px; border-left: 3px solid var(--purple); margin-bottom: 10px; }
+  .booking-time { font-size: 12px; color: var(--purple); font-weight: 600; margin-bottom: 4px; }
+  .booking-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 
-  .admin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-  .admin-card {
-    background: var(--panel-2);
-    border-radius: 10px;
-    padding: 16px;
-    border: 1px solid var(--border);
-  }
-  .admin-card-title {
-    font-size: 12px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-  }
-  .admin-card-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--accent);
-  }
-  .admin-card-sub {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 4px;
-  }
+  .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .admin-card { background: var(--panel-2); border-radius: 10px; padding: 16px; border: 1px solid var(--border); }
+  .admin-card-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .admin-card-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .admin-card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
-  .admin-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
-    flex-wrap: wrap;
-  }
-  .admin-tab {
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+  .admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap; }
+  .admin-tab { background: transparent; border: none; color: var(--muted); padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
   .admin-tab.active { background: var(--accent); color: white; }
-  .admin-tab-content { display: none; }
-  .admin-tab-content.active { display: block; }
+  .admin-tab-content { display: none; } .admin-tab-content.active { display: block; }
 
   .reports-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .report-tab {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+  .report-tab { background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
   .report-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
-  .chart-container {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    position: relative;
-    height: 300px;
-  }
-  .chart-title {
-    font-size: 14px;
-    color: var(--muted);
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
+  .chart-container { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; position: relative; height: 300px; }
+  .chart-title { font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-  .repair-zone-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .repair-zone-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--cyan);
-  }
-  .repair-zone-count {
-    font-size: 12px;
-    color: var(--muted);
+  .repair-zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .repair-zone-title { font-size: 16px; font-weight: 600; color: var(--cyan); }
+  .repair-zone-count { font-size: 12px; color: var(--muted); }
+
+  /* Калькулятор услуг */
+  .calc-services { max-height: 250px; overflow-y: auto; margin-bottom: 12px; }
+  .calc-category { font-size: 12px; color: var(--accent); font-weight: 600; margin: 12px 0 6px; text-transform: uppercase; }
+  .calc-service { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+  .calc-service:hover { border-color: var(--accent); }
+  .calc-service.selected { border-color: var(--ok); background: rgba(16,185,129,0.1); }
+  .calc-service-name { font-size: 13px; flex: 1; }
+  .calc-service-price { font-size: 13px; font-weight: 600; color: var(--accent); margin-left: 8px; }
+  .calc-total { background: var(--panel-2); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; margin-top: 12px; }
+  .calc-total-value { color: var(--ok); font-size: 20px; }
+
+  /* История клиента */
+  .client-header { background: var(--panel-2); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .client-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .client-phone { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+  .client-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .client-stat { background: var(--bg); border-radius: 8px; padding: 10px; text-align: center; }
+  .client-stat-value { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .client-stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Печать */
+  .print-preview { background: white; color: black; padding: 30px; border-radius: 8px; font-family: 'Times New Roman', serif; }
+  .print-header { display: flex; justify-content: space-between; border-bottom: 2px solid black; padding-bottom: 15px; margin-bottom: 20px; }
+  .print-logo { font-size: 24px; font-weight: bold; }
+  .print-logo-sub { font-size: 12px; color: #666; }
+  .print-title { text-align: center; font-size: 20px; font-weight: bold; margin: 20px 0; text-transform: uppercase; }
+  .print-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; font-size: 14px; }
+  .print-info-row { display: flex; border-bottom: 1px dotted #ccc; padding: 4px 0; }
+  .print-info-label { width: 150px; color: #666; }
+  .print-info-value { flex: 1; font-weight: 600; }
+  .print-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  .print-table th, .print-table td { border: 1px solid #333; padding: 8px; text-align: left; font-size: 13px; }
+  .print-table th { background: #f0f0f0; }
+  .print-total { text-align: right; font-size: 18px; font-weight: bold; margin: 20px 0; }
+  .print-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+  .print-sign-line { border-top: 1px solid black; padding-top: 5px; font-size: 12px; text-align: center; margin-top: 30px; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+    .print-preview { box-shadow: none; }
   }
 </style>
 </head>
@@ -416,6 +180,7 @@
   <div class="header-right">
     <span class="sync-status" id="syncStatus">⚪ Подключение...</span>
     <button class="btn ghost" onclick="openMastersModal()">👥 Мастера</button>
+    <button class="btn ghost" onclick="openServicesModal()">🧮 Услуги</button>
     <button class="btn admin" onclick="openAdminModal()">📊 Админка</button>
     <div class="clock" id="clock"></div>
   </div>
@@ -425,11 +190,7 @@
 
 <div class="grid">
   <div>
-    <div class="panel">
-      <h2>Подъёмники</h2>
-      <div class="posts-list" id="posts"></div>
-    </div>
-
+    <div class="panel"><h2>Подъёмники</h2><div class="posts-list" id="posts"></div></div>
     <div class="panel">
       <div class="repair-zone-header">
         <div class="repair-zone-title">🔧 Ремонтная зона (без подъёмника)</div>
@@ -437,42 +198,23 @@
       </div>
       <div class="list" id="repairZone"></div>
     </div>
-
-    <div class="panel">
-      <h2>📅 Бронирования</h2>
-      <div id="bookings"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Активные заказ-наряды</h2>
-      <div class="list" id="orders"></div>
-    </div>
+    <div class="panel"><h2>📅 Бронирования</h2><div id="bookings"></div></div>
+    <div class="panel"><h2>Активные заказ-наряды</h2><div class="list" id="orders"></div></div>
   </div>
-
   <div>
     <div class="panel">
       <h2>Очередь <span class="badge waiting" id="queue-count">0</span></h2>
       <div class="list" id="queue"></div>
-      
       <div class="action-buttons">
-        <button class="action-btn order" onclick="openOrderModal()">
-          <span class="icon">📋</span>
-          <span>Новый заказ</span>
-        </button>
-        <button class="action-btn booking" onclick="openBookingModal()">
-          <span class="icon">📅</span>
-          <span>Забронировать подъёмник</span>
-        </button>
-        <button class="action-btn repair" onclick="openRepairModal()">
-          <span class="icon">🔧</span>
-          <span>Ремонт без подъёмника</span>
-        </button>
+        <button class="action-btn order" onclick="openOrderModal()"><span class="icon">📋</span><span>Новый заказ</span></button>
+        <button class="action-btn booking" onclick="openBookingModal()"><span class="icon">📅</span><span>Забронировать подъёмник</span></button>
+        <button class="action-btn repair" onclick="openRepairModal()"><span class="icon">🔧</span><span>Ремонт без подъёмника</span></button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Модалка админ-панели -->
+<!-- Админка -->
 <div class="modal" id="adminModal">
   <div class="modal-content large">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -484,12 +226,8 @@
       <button class="admin-tab" onclick="switchAdminTab('history', this)">📋 Работы</button>
       <button class="admin-tab" onclick="switchAdminTab('reports', this)">📊 Отчёты</button>
     </div>
-    <div id="adminFinance" class="admin-tab-content active">
-      <div class="admin-grid" id="adminStats"></div>
-    </div>
-    <div id="adminHistory" class="admin-tab-content">
-      <div class="list" id="adminHistoryList"></div>
-    </div>
+    <div id="adminFinance" class="admin-tab-content active"><div class="admin-grid" id="adminStats"></div></div>
+    <div id="adminHistory" class="admin-tab-content"><div class="list" id="adminHistoryList"></div></div>
     <div id="adminReports" class="admin-tab-content">
       <div class="reports-tabs">
         <div class="report-tab active" onclick="switchReportTab('daily', this)">По дням</div>
@@ -504,7 +242,7 @@
   </div>
 </div>
 
-<!-- Модалка мастеров -->
+<!-- Мастера -->
 <div class="modal" id="mastersModal">
   <div class="modal-content">
     <h3>👥 Управление мастерами</h3>
@@ -521,7 +259,49 @@
   </div>
 </div>
 
-<!-- Модалка бронирования -->
+<!-- Справочник услуг -->
+<div class="modal" id="servicesModal">
+  <div class="modal-content">
+    <h3>🧮 Справочник услуг</h3>
+    <div id="servicesList" style="max-height:300px; overflow-y:auto; margin-bottom:16px;"></div>
+    <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+      <div class="form-group"><label>Категория</label><input id="s-category" placeholder="ТО, Ремонт, Диагностика"></div>
+      <div class="form-group"><label>Название услуги</label><input id="s-name" placeholder="Замена масла"></div>
+      <div class="form-group"><label>Цена (₽)</label><input id="s-price" type="number" value="0"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="closeServicesModal()">Закрыть</button>
+        <button class="btn" onclick="saveService()">Добавить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- История клиента -->
+<div class="modal" id="clientModal">
+  <div class="modal-content large">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3>👤 История клиента</h3>
+      <button class="btn ghost" onclick="closeClientModal()">✕ Закрыть</button>
+    </div>
+    <div id="clientContent"></div>
+  </div>
+</div>
+
+<!-- Печать заказ-наряда -->
+<div class="modal" id="printModal">
+  <div class="modal-content large">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3>🖨️ Печать заказ-наряда</h3>
+      <div>
+        <button class="btn ok" onclick="window.print()" style="margin-right:8px;">🖨️ Печать</button>
+        <button class="btn ghost" onclick="closePrintModal()">✕ Закрыть</button>
+      </div>
+    </div>
+    <div id="printArea"></div>
+  </div>
+</div>
+
+<!-- Бронирование -->
 <div class="modal" id="bookingModal">
   <div class="modal-content">
     <h3>📅 Бронирование подъемника</h3>
@@ -538,7 +318,7 @@
   </div>
 </div>
 
-<!-- Модалка продления бронирования -->
+<!-- Продление -->
 <div class="modal" id="extendBookingModal">
   <div class="modal-content">
     <h3>⏰ Продлить бронирование</h3>
@@ -552,14 +332,23 @@
   </div>
 </div>
 
-<!-- Модалка заказа -->
+<!-- Заказ -->
 <div class="modal" id="orderModal">
   <div class="modal-content">
     <h3 id="modalTitle">Новый заказ-наряд</h3>
     <div class="form-group"><label>Клиент</label><input id="f-client" placeholder="Иванов И.И."></div>
     <div class="form-group"><label>Телефон клиента</label><input id="f-phone" placeholder="+7 ..."></div>
     <div class="form-group"><label>Автомобиль</label><input id="f-car" placeholder="Toyota Camry, А123БВ 77"></div>
-    <div class="form-group"><label>Услуги</label><textarea id="f-services" rows="2" placeholder="Замена масла, фильтров"></textarea></div>
+    
+    <div style="border-top: 1px solid var(--border); padding-top: 12px; margin: 12px 0;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label style="font-size:12px; color:var(--muted);">🧮 Услуги (калькулятор)</label>
+        <button class="btn small ghost" onclick="openCalcInOrder()">+ Добавить</button>
+      </div>
+      <div id="orderServicesList" style="max-height:150px; overflow-y:auto; margin-bottom:8px;"></div>
+    </div>
+    
+    <div class="form-group"><label>Дополнительные работы (текст)</label><textarea id="f-services" rows="2" placeholder="Замена масла, фильтров"></textarea></div>
     <div class="form-group"><label>Стоимость (₽)</label><input id="f-price" type="number" value="0"></div>
     <div class="form-group"><label>⏰ Выдать автомобиль к</label><input id="f-deadline" type="datetime-local"></div>
     <div class="modal-actions">
@@ -569,7 +358,27 @@
   </div>
 </div>
 
-<!-- Модалка ремонта без подъёмника -->
+<!-- Калькулятор в заказе -->
+<div class="modal" id="calcModal">
+  <div class="modal-content">
+    <h3>🧮 Калькулятор услуг</h3>
+    <div class="form-group">
+      <label>Поиск услуги</label>
+      <input id="calc-search" placeholder="Введите название..." oninput="filterServices()">
+    </div>
+    <div class="calc-services" id="calcServicesList"></div>
+    <div class="calc-total">
+      <span>Итого:</span>
+      <span class="calc-total-value" id="calcTotal">0 ₽</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeCalcModal()">Отмена</button>
+      <button class="btn ok" onclick="applyCalc()">✓ Применить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ремонт -->
 <div class="modal" id="repairModal">
   <div class="modal-content">
     <h3>🔧 Ремонт без подъёмника</h3>
@@ -596,7 +405,6 @@ const firebaseConfig = {
   messagingSenderId: "1043595691448",
   appId: "1:1043595691448:web:7bd610400cf41701e7b4d"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -608,457 +416,404 @@ let state = {
     { id: 4, name: 'Сход-Развал', type: 'alignment', status: 'free' },
   ],
   masters: [],
+  services: [],
   orders: [],
   bookings: [],
   queue: [],
   history: [],
-  revenue: 0,
-  bookingRevenue: 0,
-  servedToday: 0,
-  dailyStats: {}
+  revenue: 0, bookingRevenue: 0, servedToday: 0, dailyStats: {}
 };
+
+// Временные данные для калькулятора
+let calcSelectedServices = [];
 
 function initFirebaseListeners() {
   const connectedRef = db.ref('.info/connected');
   connectedRef.on('value', (snap) => {
-    const statusEl = document.getElementById('syncStatus');
-    if (snap.val() === true) {
-      statusEl.textContent = '🟢 Синхронизировано';
-      statusEl.className = 'sync-status connected';
-    } else {
-      statusEl.textContent = '🔴 Нет связи';
-      statusEl.className = 'sync-status disconnected';
-    }
+    const el = document.getElementById('syncStatus');
+    if (snap.val() === true) { el.textContent = '🟢 Синхронизировано'; el.className = 'sync-status connected'; }
+    else { el.textContent = '🔴 Нет связи'; el.className = 'sync-status disconnected'; }
   });
-
-  db.ref('posts').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) { state.posts = Object.values(data); render(); }
-  });
-  db.ref('masters').on('value', (snapshot) => {
-    state.masters = snapshot.val() ? Object.values(snapshot.val()) : [];
-    render();
-  });
-  db.ref('orders').on('value', (snapshot) => {
-    state.orders = snapshot.val() ? Object.values(snapshot.val()) : [];
-    render();
-  });
-  db.ref('bookings').on('value', (snapshot) => {
-    state.bookings = snapshot.val() ? Object.values(snapshot.val()) : [];
-    render();
-  });
-  db.ref('queue').on('value', (snapshot) => {
-    state.queue = snapshot.val() ? Object.values(snapshot.val()) : [];
-    render();
-  });
-  db.ref('history').on('value', (snapshot) => {
-    state.history = snapshot.val() ? Object.values(snapshot.val()) : [];
-    render();
-  });
-  db.ref('stats').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      state.revenue = data.revenue || 0;
-      state.bookingRevenue = data.bookingRevenue || 0;
-      state.servedToday = data.servedToday || 0;
-      state.dailyStats = data.dailyStats || {};
-      render();
-    }
+  db.ref('posts').on('value', s => { if (s.val()) { state.posts = Object.values(s.val()); render(); } });
+  db.ref('masters').on('value', s => { state.masters = s.val() ? Object.values(s.val()) : []; render(); });
+  db.ref('services').on('value', s => { state.services = s.val() ? Object.values(s.val()) : []; });
+  db.ref('orders').on('value', s => { state.orders = s.val() ? Object.values(s.val()) : []; render(); });
+  db.ref('bookings').on('value', s => { state.bookings = s.val() ? Object.values(s.val()) : []; render(); });
+  db.ref('queue').on('value', s => { state.queue = s.val() ? Object.values(s.val()) : []; render(); });
+  db.ref('history').on('value', s => { state.history = s.val() ? Object.values(s.val()) : []; render(); });
+  db.ref('stats').on('value', s => {
+    const d = s.val();
+    if (d) { state.revenue = d.revenue || 0; state.bookingRevenue = d.bookingRevenue || 0; state.servedToday = d.servedToday || 0; state.dailyStats = d.dailyStats || {}; render(); }
   });
 }
 
-function updatePost(postId, updates) { db.ref(`posts/${postId}`).update(updates); }
-function initPosts() {
-  db.ref('posts').once('value', (snap) => {
-    if (!snap.exists()) state.posts.forEach(p => db.ref(`posts/${p.id}`).set(p));
-  });
-}
-function addOrder(order) { db.ref(`orders/${order.id}`).set(order); }
-function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(updates); }
-function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
-function addToQueue(order) { db.ref(`queue/${order.id}`).set(order); }
-function removeFromQueue(orderId) { db.ref(`queue/${orderId}`).remove(); }
-function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
-function addBooking(booking) { db.ref(`bookings/${booking.id}`).set(booking); }
-function updateBooking(bookingId, updates) { db.ref(`bookings/${bookingId}`).update(updates); }
-function removeBooking(bookingId) { db.ref(`bookings/${bookingId}`).remove(); }
-function updateStats() {
-  db.ref('stats').set({
-    revenue: state.revenue,
-    bookingRevenue: state.bookingRevenue,
-    servedToday: state.servedToday,
-    dailyStats: state.dailyStats
-  });
-}
-function addMaster(master) { db.ref(`masters/${master.id}`).set(master); }
-function updateMaster(masterId, updates) { db.ref(`masters/${masterId}`).update(updates); }
-function removeMaster(masterId) { db.ref(`masters/${masterId}`).remove(); }
+function updatePost(id, u) { db.ref(`posts/${id}`).update(u); }
+function initPosts() { db.ref('posts').once('value', s => { if (!s.exists()) state.posts.forEach(p => db.ref(`posts/${p.id}`).set(p)); }); }
+function addOrder(o) { db.ref(`orders/${o.id}`).set(o); }
+function updateOrder(id, u) { db.ref(`orders/${id}`).update(u); }
+function removeOrder(id) { db.ref(`orders/${id}`).remove(); }
+function addToQueue(o) { db.ref(`queue/${o.id}`).set(o); }
+function removeFromQueue(id) { db.ref(`queue/${id}`).remove(); }
+function addToHistory(o) { db.ref(`history/${o.id}`).set(o); }
+function addBooking(b) { db.ref(`bookings/${b.id}`).set(b); }
+function updateBooking(id, u) { db.ref(`bookings/${id}`).update(u); }
+function removeBooking(id) { db.ref(`bookings/${id}`).remove(); }
+function updateStats() { db.ref('stats').set({ revenue: state.revenue, bookingRevenue: state.bookingRevenue, servedToday: state.servedToday, dailyStats: state.dailyStats }); }
+function addMaster(m) { db.ref(`masters/${m.id}`).set(m); }
+function updateMaster(id, u) { db.ref(`masters/${id}`).update(u); }
+function removeMaster(id) { db.ref(`masters/${id}`).remove(); }
+function addService(s) { db.ref(`services/${s.id}`).set(s); }
+function updateService(id, u) { db.ref(`services/${id}`).update(u); }
+function removeService(id) { db.ref(`services/${id}`).remove(); }
 
 function getTodayKey() { return new Date().toISOString().split('T')[0]; }
-function getDateKey(date) { return date.toISOString().split('T')[0]; }
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-}
-function getWeekKey(date) {
-  const d = new Date(date);
-  const firstDay = new Date(d);
-  firstDay.setDate(d.getDate() - d.getDay() + 1);
-  return getDateKey(firstDay);
-}
-function formatWeek(weekKey) {
-  const d = new Date(weekKey);
-  const end = new Date(d);
-  end.setDate(d.getDate() + 6);
-  return `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`;
-}
-function formatTime(ms) {
-  const totalSec = Math.floor(Math.abs(ms) / 1000);
-  const hours = Math.floor(totalSec / 3600);
-  const mins = Math.floor((totalSec % 3600) / 60);
-  const secs = totalSec % 60;
-  if (hours > 0) return `${hours}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-  return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-}
-function formatCountdown(deadlineTs) {
-  const diff = deadlineTs - Date.now();
-  const abs = Math.abs(diff);
-  const hours = Math.floor(abs / 3600000);
-  const mins = Math.floor((abs % 3600000) / 60000);
-  if (diff < 0) {
-    if (hours > 0) return `−${hours}ч ${mins}м`;
-    return `−${mins}м`;
-  }
-  if (hours > 0) return `${hours}ч ${mins}м`;
-  const secs = Math.floor((abs % 60000) / 1000);
-  return `${mins}м ${String(secs).padStart(2,'0')}с`;
-}
-function getDeadlineClass(deadlineTs) {
-  const diff = deadlineTs - Date.now();
-  if (diff < 0) return 'err';
-  if (diff < 30 * 60 * 1000) return 'warn';
-  return 'ok';
-}
-function formatDateTime(ts) {
-  const d = new Date(ts);
-  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
-function updateDailyStats(order) {
-  const today = getTodayKey();
-  if (!state.dailyStats[today]) state.dailyStats[today] = { revenue: 0, orders: 0, masters: {} };
-  state.dailyStats[today].revenue += order.price || 0;
-  state.dailyStats[today].orders += 1;
-  const masterId = order.masterId || 'unassigned';
-  if (!state.dailyStats[today].masters[masterId]) state.dailyStats[today].masters[masterId] = 0;
-  state.dailyStats[today].masters[masterId] += order.price || 0;
+function getDateKey(d) { return d.toISOString().split('T')[0]; }
+function formatDate(s) { const d = new Date(s); return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }); }
+function getWeekKey(d) { const f = new Date(d); f.setDate(d.getDate() - d.getDay() + 1); return getDateKey(f); }
+function formatWeek(k) { const d = new Date(k), e = new Date(d); e.setDate(d.getDate() + 6); return `${d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})} - ${e.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}`; }
+function formatTime(ms) { const t = Math.floor(Math.abs(ms)/1000), h = Math.floor(t/3600), m = Math.floor((t%3600)/60), s = t%60; return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+function formatCountdown(ts) { const d = ts - Date.now(), a = Math.abs(d), h = Math.floor(a/3600000), m = Math.floor((a%3600000)/60000); if (d < 0) return h > 0 ? `−${h}ч ${m}м` : `−${m}м`; if (h > 0) return `${h}ч ${m}м`; return `${m}м ${String(Math.floor((a%60000)/1000)).padStart(2,'0')}с`; }
+function getDeadlineClass(ts) { const d = ts - Date.now(); if (d < 0) return 'err'; if (d < 30*60*1000) return 'warn'; return 'ok'; }
+function formatDateTime(ts) { return new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+function toLocalDatetime(ts) { const d = new Date(ts), p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+function updateDailyStats(o) {
+  const t = getTodayKey();
+  if (!state.dailyStats[t]) state.dailyStats[t] = { revenue: 0, orders: 0, masters: {} };
+  state.dailyStats[t].revenue += o.price || 0; state.dailyStats[t].orders += 1;
+  const mid = o.masterId || 'unassigned';
+  if (!state.dailyStats[t].masters[mid]) state.dailyStats[t].masters[mid] = 0;
+  state.dailyStats[t].masters[mid] += o.price || 0;
   updateStats();
 }
 
+// Графики
 let charts = {};
-function initCharts() {
-  Chart.defaults.color = '#8b949e';
-  Chart.defaults.borderColor = '#2d3642';
-  Chart.defaults.font.family = '-apple-system, "Segoe UI", Roboto, sans-serif';
-}
+function initCharts() { Chart.defaults.color = '#8b949e'; Chart.defaults.borderColor = '#2d3642'; Chart.defaults.font.family = '-apple-system, "Segoe UI", Roboto, sans-serif'; }
 function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
-
 function renderDailyReports() {
   destroyCharts();
-  const days = [];
-  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(getDateKey(d)); }
+  const days = []; for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(getDateKey(d)); }
   const labels = days.map(formatDate);
-  charts.dailyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data: days.map(day => state.dailyStats[day]?.orders || 0), backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 2, borderRadius: 6 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-  });
-  charts.dailyRevenue = new Chart(document.getElementById('dailyRevenueChart').getContext('2d'), {
-    type: 'line',
-    data: { labels, datasets: [{ data: days.map(day => state.dailyStats[day]?.revenue || 0), borderColor: 'rgba(16,185,129,1)', backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } } }
-  });
+  charts.dailyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), { type: 'bar', data: { labels, datasets: [{ data: days.map(d => state.dailyStats[d]?.orders || 0), backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+  charts.dailyRevenue = new Chart(document.getElementById('dailyRevenueChart').getContext('2d'), { type: 'line', data: { labels, datasets: [{ data: days.map(d => state.dailyStats[d]?.revenue || 0), borderColor: 'rgba(16,185,129,1)', backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } } } });
 }
-
 function renderWeeklyReports() {
   destroyCharts();
-  const weeks = [];
-  for (let i = 3; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i * 7); weeks.push(getWeekKey(d)); }
+  const weeks = []; for (let i = 3; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i*7); weeks.push(getWeekKey(d)); }
   const labels = weeks.map(formatWeek);
-  const sumWeek = (weekKey, field) => {
-    let total = 0;
-    for (let i = 0; i < 7; i++) { const d = new Date(weekKey); d.setDate(d.getDate() + i); const s = state.dailyStats[getDateKey(d)]; if (s) total += (field === 'revenue' ? s.revenue : s.orders); }
-    return total;
-  };
-  charts.weeklyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data: weeks.map(w => sumWeek(w, 'orders')), backgroundColor: 'rgba(99,102,241,0.6)', borderColor: 'rgba(99,102,241,1)', borderWidth: 2, borderRadius: 6 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-  });
-  charts.weeklyRevenue = new Chart(document.getElementById('dailyRevenueChart').getContext('2d'), {
-    type: 'line',
-    data: { labels, datasets: [{ data: weeks.map(w => sumWeek(w, 'revenue')), borderColor: 'rgba(245,158,11,1)', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } } }
-  });
+  const sum = (w, f) => { let t = 0; for (let i = 0; i < 7; i++) { const d = new Date(w); d.setDate(d.getDate()+i); const s = state.dailyStats[getDateKey(d)]; if (s) t += (f==='revenue'?s.revenue:s.orders); } return t; };
+  charts.weeklyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), { type: 'bar', data: { labels, datasets: [{ data: weeks.map(w => sum(w,'orders')), backgroundColor: 'rgba(99,102,241,0.6)', borderColor: 'rgba(99,102,241,1)', borderWidth: 2, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } });
+  charts.weeklyRevenue = new Chart(document.getElementById('dailyRevenueChart').getContext('2d'), { type: 'line', data: { labels, datasets: [{ data: weeks.map(w => sum(w,'revenue')), borderColor: 'rgba(245,158,11,1)', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } } } });
 }
-
 function renderMastersReports() {
   destroyCharts();
-  const mastersData = {};
-  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const s = state.dailyStats[getDateKey(d)]; if (s) Object.entries(s.masters).forEach(([id, r]) => { mastersData[id] = (mastersData[id] || 0) + r; }); }
-  const masterIds = Object.keys(mastersData);
-  if (!masterIds.length) { document.getElementById('reportContent').innerHTML = '<div class="empty">Нет данных по мастерам</div>'; return; }
-  const labels = masterIds.map(id => { const m = state.masters.find(x => String(x.id) === String(id)); return m ? m.name : (id === 'unassigned' ? 'Не назначен' : id); });
+  const md = {}; for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate()-i); const s = state.dailyStats[getDateKey(d)]; if (s) Object.entries(s.masters).forEach(([id,r]) => { md[id] = (md[id]||0)+r; }); }
+  const ids = Object.keys(md);
+  if (!ids.length) { document.getElementById('reportContent').innerHTML = '<div class="empty">Нет данных</div>'; return; }
+  const labels = ids.map(id => { const m = state.masters.find(x => String(x.id)===String(id)); return m ? m.name : (id==='unassigned'?'Не назначен':id); });
   document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Выручка по мастерам (7 дней)</div><canvas id="mastersChart"></canvas></div>`;
   const colors = ['rgba(59,130,246,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.8)','rgba(239,68,68,0.8)','rgba(99,102,241,0.8)'];
-  charts.masters = new Chart(document.getElementById('mastersChart').getContext('2d'), {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data: Object.values(mastersData), backgroundColor: colors.slice(0, masterIds.length), borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: ctx => { const v = ctx.parsed, t = ctx.dataset.data.reduce((a,b)=>a+b,0); return `${ctx.label}: ${v.toLocaleString('ru-RU')} ₽ (${((v/t)*100).toFixed(1)}%)`; } } } } }
-  });
+  charts.masters = new Chart(document.getElementById('mastersChart').getContext('2d'), { type: 'doughnut', data: { labels, datasets: [{ data: Object.values(md), backgroundColor: colors.slice(0,ids.length), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: ctx => { const v=ctx.parsed, t=ctx.dataset.data.reduce((a,b)=>a+b,0); return `${ctx.label}: ${v.toLocaleString('ru-RU')} ₽ (${((v/t)*100).toFixed(1)}%)`; } } } } } });
 }
-
 let currentReportTab = 'daily';
 function switchReportTab(tab, el) {
   currentReportTab = tab;
   document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  if (tab === 'daily') {
-    document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Загрузка по дням (7 дней)</div><canvas id="dailyLoadChart"></canvas></div><div class="chart-container"><div class="chart-title">Выручка по дням (7 дней)</div><canvas id="dailyRevenueChart"></canvas></div>`;
-    renderDailyReports();
-  } else if (tab === 'weekly') {
-    document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Загрузка по неделям (4 недели)</div><canvas id="dailyLoadChart"></canvas></div><div class="chart-container"><div class="chart-title">Выручка по неделям (4 недели)</div><canvas id="dailyRevenueChart"></canvas></div>`;
-    renderWeeklyReports();
-  } else if (tab === 'masters') renderMastersReports();
+  if (tab === 'daily') { document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Загрузка по дням (7 дней)</div><canvas id="dailyLoadChart"></canvas></div><div class="chart-container"><div class="chart-title">Выручка по дням (7 дней)</div><canvas id="dailyRevenueChart"></canvas></div>`; renderDailyReports(); }
+  else if (tab === 'weekly') { document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Загрузка по неделям (4 недели)</div><canvas id="dailyLoadChart"></canvas></div><div class="chart-container"><div class="chart-title">Выручка по неделям (4 недели)</div><canvas id="dailyRevenueChart"></canvas></div>`; renderWeeklyReports(); }
+  else if (tab === 'masters') renderMastersReports();
 }
 
-function openAdminModal() {
-  renderAdminStats();
-  renderAdminHistory();
-  renderDailyReports();
-  document.getElementById('adminModal').classList.add('open');
-}
+function openAdminModal() { renderAdminStats(); renderAdminHistory(); renderDailyReports(); document.getElementById('adminModal').classList.add('open'); }
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('open'); }
-
 function switchAdminTab(tab, el) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-  if (tab === 'reports') {
-    setTimeout(() => {
-      if (currentReportTab === 'daily') renderDailyReports();
-      else if (currentReportTab === 'weekly') renderWeeklyReports();
-      else if (currentReportTab === 'masters') renderMastersReports();
-    }, 100);
-  }
+  document.getElementById('admin'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+  if (tab === 'reports') setTimeout(() => { if (currentReportTab==='daily') renderDailyReports(); else if (currentReportTab==='weekly') renderWeeklyReports(); else if (currentReportTab==='masters') renderMastersReports(); }, 100);
 }
-
 function renderAdminStats() {
-  const today = getTodayKey();
-  const todayStats = state.dailyStats[today] || { revenue: 0, orders: 0 };
-  const totalRevenue = state.revenue + state.bookingRevenue;
+  const t = getTodayKey(), ts = state.dailyStats[t] || { revenue: 0, orders: 0 };
   document.getElementById('adminStats').innerHTML = `
-    <div class="admin-card"><div class="admin-card-title">Выручка за день (работы)</div><div class="admin-card-value">${todayStats.revenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">${todayStats.orders} заказов</div></div>
-    <div class="admin-card"><div class="admin-card-title">Аренда за день</div><div class="admin-card-value" style="color: var(--purple);">${state.bookingRevenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">${state.bookings.filter(b => getDateKey(new Date(b.start)) === today).length} бронирований</div></div>
-    <div class="admin-card"><div class="admin-card-title">Всего выручка</div><div class="admin-card-value">${totalRevenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">Работы + Аренда</div></div>
-    <div class="admin-card"><div class="admin-card-title">Всего обслужено</div><div class="admin-card-value">${state.servedToday}</div><div class="admin-card-sub">автомобилей сегодня</div></div>
-  `;
+    <div class="admin-card"><div class="admin-card-title">Выручка за день (работы)</div><div class="admin-card-value">${ts.revenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">${ts.orders} заказов</div></div>
+    <div class="admin-card"><div class="admin-card-title">Аренда за день</div><div class="admin-card-value" style="color:var(--purple);">${state.bookingRevenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">${state.bookings.filter(b => getDateKey(new Date(b.start))===t).length} бронирований</div></div>
+    <div class="admin-card"><div class="admin-card-title">Всего выручка</div><div class="admin-card-value">${(state.revenue+state.bookingRevenue).toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">Работы + Аренда</div></div>
+    <div class="admin-card"><div class="admin-card-title">Всего обслужено</div><div class="admin-card-value">${state.servedToday}</div><div class="admin-card-sub">автомобилей сегодня</div></div>`;
 }
-
 function renderAdminHistory() {
   const el = document.getElementById('adminHistoryList');
   if (!state.history.length) { el.innerHTML = '<div class="empty">Пока нет завершённых работ</div>'; return; }
-  el.innerHTML = state.history.slice(0, 20).map(h => {
-    const masterName = h.masterId ? (state.masters.find(m => String(m.id) === String(h.masterId))?.name || h.master) : h.master;
-    const zone = h.postId === 0 ? '🔧 Ремонтная зона' : (state.posts.find(p => p.id == h.postId)?.name || '—');
-    return `<div class="item"><div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div><div class="item-main">${h.car}</div><div class="item-sub">${h.services} · ${masterName || '—'} · ${zone} · ${h.price} ₽</div></div>`;
+  el.innerHTML = state.history.slice(0,20).map(h => {
+    const mn = h.masterId ? (state.masters.find(m=>String(m.id)===String(h.masterId))?.name||h.master) : h.master;
+    const z = h.postId===0 ? '🔧 Ремонтная зона' : (state.posts.find(p=>p.id==h.postId)?.name||'—');
+    return `<div class="item"><div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div><div class="item-main">${h.car}</div><div class="item-sub">${h.services} · ${mn||'—'} · ${z} · ${h.price} ₽</div></div>`;
   }).join('');
 }
 
 const statusLabels = { free: 'Свободен', busy: 'Занят', waiting: 'Ожидание' };
-
 function renderStats() {
-  const busyCount = state.posts.filter(p => p.status === 'busy').length;
-  const total = state.posts.length;
-  const load = total ? Math.round(busyCount / total * 100) : 0;
-  const urgent = state.orders.filter(o => o.deadline && getDeadlineClass(o.deadline) !== 'ok').length;
+  const b = state.posts.filter(p=>p.status==='busy').length, t = state.posts.length, l = t?Math.round(b/t*100):0;
+  const u = state.orders.filter(o=>o.deadline&&getDeadlineClass(o.deadline)!=='ok').length;
   document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="stat-label">Загрузка</div><div class="stat-value ${load>70?'warn':'ok'}">${load}%</div></div>
-    <div class="stat"><div class="stat-label">Подъёмников занято</div><div class="stat-value accent">${busyCount} / ${total}</div></div>
+    <div class="stat"><div class="stat-label">Загрузка</div><div class="stat-value ${l>70?'warn':'ok'}">${l}%</div></div>
+    <div class="stat"><div class="stat-label">Подъёмников занято</div><div class="stat-value accent">${b} / ${t}</div></div>
     <div class="stat"><div class="stat-label">Обслужено сегодня</div><div class="stat-value ok">${state.servedToday}</div></div>
-    <div class="stat"><div class="stat-label">Срочных / просрочено</div><div class="stat-value ${urgent>0?'warn':'ok'}">${urgent}</div></div>
-  `;
+    <div class="stat"><div class="stat-label">Срочных / просрочено</div><div class="stat-value ${u>0?'warn':'ok'}">${u}</div></div>`;
 }
-
 function renderPosts() {
-  const el = document.getElementById('posts');
-  el.innerHTML = state.posts.map(p => {
-    const o = state.orders.find(x => x.postId === p.id);
-    let info = '', timer = '', deadline = '';
+  document.getElementById('posts').innerHTML = state.posts.map(p => {
+    const o = state.orders.find(x=>x.postId===p.id);
+    let info='', timer='', dl='';
     if (o) {
-      const elapsed = o.startedAt ? Date.now() - o.startedAt : 0;
-      info = `<div class="post-info active">${o.car} · ${o.master || '—'}</div>`;
-      timer = `<div class="post-timer active">${o.startedAt ? formatTime(elapsed) : 'Ожидает'}</div>`;
-      if (o.deadline) {
-        const cls = getDeadlineClass(o.deadline);
-        const label = cls === 'err' ? 'Просрочено' : 'Осталось';
-        deadline = `<div class="post-deadline ${cls}" title="Выдать к ${new Date(o.deadline).toLocaleString('ru-RU')}">${label}: ${formatCountdown(o.deadline)}</div>`;
-      }
-    } else {
-      info = `<div class="post-info">Нет активного заказа</div>`;
-      timer = `<div class="post-timer idle">—</div>`;
-    }
-    return `<div class="post-row ${p.status}" onclick="cycleStatus(${p.id})"><div class="post-main"><div class="post-name">${p.name}</div>${info}</div>${timer}${deadline}<span class="badge ${p.status}">${statusLabels[p.status]}</span></div>`;
+      const e = o.startedAt?Date.now()-o.startedAt:0;
+      info = `<div class="post-info active">${o.car} · ${o.master||'—'}</div>`;
+      timer = `<div class="post-timer active">${o.startedAt?formatTime(e):'Ожидает'}</div>`;
+      if (o.deadline) { const c = getDeadlineClass(o.deadline); dl = `<div class="post-deadline ${c}">${c==='err'?'Просрочено':'Осталось'}: ${formatCountdown(o.deadline)}</div>`; }
+    } else { info = `<div class="post-info">Нет активного заказа</div>`; timer = `<div class="post-timer idle">—</div>`; }
+    return `<div class="post-row ${p.status}" onclick="cycleStatus(${p.id})"><div class="post-main"><div class="post-name">${p.name}</div>${info}</div>${timer}${dl}<span class="badge ${p.status}">${statusLabels[p.status]}</span></div>`;
   }).join('');
 }
-
 function renderRepairZone() {
   const el = document.getElementById('repairZone');
-  const repairOrders = state.orders.filter(o => o.postId === 0 || o.postId === null);
-  
-  document.getElementById('repairCount').textContent = `${repairOrders.length} ${repairOrders.length === 1 ? 'работа' : 'работ'}`;
-  
-  if (!repairOrders.length) {
-    el.innerHTML = '<div class="empty">Ремонтная зона свободна</div>';
-    return;
-  }
-  
-  el.innerHTML = repairOrders.map(o => {
-    const elapsed = o.startedAt ? Math.round((Date.now() - o.startedAt) / 60000) : 0;
-    let deadlineHtml = '';
-    if (o.deadline) {
-      const cls = getDeadlineClass(o.deadline);
-      const prefix = cls === 'err' ? '⚠ Просрочено: ' : '⏱ Осталось: ';
-      deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
-    }
-    const statusBadge = o.status === 'in-progress' 
-      ? '<span class="badge busy" style="margin-left:6px;">В работе</span>' 
-      : '<span class="badge waiting" style="margin-left:6px;">Ожидает</span>';
-    return `
-      <div class="item repair-zone">
-        <div class="item-top">
-          <span>#${o.id} ${deadlineHtml}${statusBadge}</span>
-          <span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span>
-        </div>
-        <div class="item-main">${o.car}</div>
-        <div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div>
-        <div class="item-sub">👷 ${o.master || 'Не назначен'} · ${o.price} ₽</div>
-        ${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
-        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="btn small ok" onclick="completeOrder(${o.id})">✓ Завершить</button>
-          <button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">✎ Изменить</button>
-          <button class="btn small danger" onclick="cancelOrder(${o.id})">✕ Отменить</button>
-        </div>
-      </div>
-    `;
+  const ro = state.orders.filter(o=>o.postId===0||o.postId===null);
+  document.getElementById('repairCount').textContent = `${ro.length} ${ro.length===1?'работа':'работ'}`;
+  if (!ro.length) { el.innerHTML = '<div class="empty">Ремонтная зона свободна</div>'; return; }
+  el.innerHTML = ro.map(o => {
+    const e = o.startedAt?Math.round((Date.now()-o.startedAt)/60000):0;
+    let dl = ''; if (o.deadline) { const c = getDeadlineClass(o.deadline); dl = `<span class="deadline-badge ${c}">${c==='err'?'⚠ Просрочено: ':'⏱ Осталось: '}${formatCountdown(o.deadline)}</span>`; }
+    const sb = o.status==='in-progress'?'<span class="badge busy" style="margin-left:6px;">В работе</span>':'<span class="badge waiting" style="margin-left:6px;">Ожидает</span>';
+    return `<div class="item repair-zone"><div class="item-top"><span>#${o.id} ${dl}${sb}</span><span>${o.startedAt?e+' мин':'Ожидает'}</span></div><div class="item-main">${o.car}</div><div class="item-sub">${o.client} ${o.phone?'· '+o.phone:''} · ${o.services}</div><div class="item-sub">👷 ${o.master||'Не назначен'} · ${o.price} ₽</div>${o.deadline?`<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"><button class="btn small ok" onclick="completeOrder(${o.id})">✓ Завершить</button><button class="btn small ghost" onclick="openPrintModal(${o.id})">🖨️ Печать</button><button class="btn small danger" onclick="cancelOrder(${o.id})">✕ Отменить</button></div></div>`;
   }).join('');
 }
-
 function renderBookings() {
   const el = document.getElementById('bookings');
-  const now = Date.now();
-  const activeBookings = state.bookings.filter(b => b.end > now).sort((a, b) => a.start - b.start);
-  if (!activeBookings.length) { el.innerHTML = '<div class="empty">Нет активных бронирований</div>'; return; }
-  el.innerHTML = activeBookings.map(b => {
-    const post = state.posts.find(p => p.id == b.postId);
-    const statusText = b.start > now ? 'Предстоит' : 'Идёт сейчас';
-    return `
-      <div class="booking-item">
-        <div class="booking-time">📅 ${formatDateTime(b.start)} — ${formatDateTime(b.end)}</div>
-        <div class="item-main">${b.client}</div>
-        <div class="item-sub">${post?.name || '—'} · ${b.price} ₽ · <span style="color: var(--purple);">${statusText}</span></div>
-        ${b.comment ? `<div class="item-sub">${b.comment}</div>` : ''}
-        <div class="booking-actions">
-          <button class="btn small ok" onclick="completeBookingNoPay(${b.id})">✓ Без оплаты</button>
-          <button class="btn small cyan" onclick="completeBookingWithPay(${b.id})">💰 Завершить с оплатой</button>
-          <button class="btn small" onclick="openExtendModal(${b.id})">⏰ Продлить</button>
-          <button class="btn small danger" onclick="cancelBooking(${b.id})">✕ Отменить</button>
-        </div>
-      </div>
-    `;
+  const now = Date.now(), ab = state.bookings.filter(b=>b.end>now).sort((a,b)=>a.start-b.start);
+  if (!ab.length) { el.innerHTML = '<div class="empty">Нет активных бронирований</div>'; return; }
+  el.innerHTML = ab.map(b => {
+    const p = state.posts.find(x=>x.id==b.postId);
+    const st = b.start>now?'Предстоит':'Идёт сейчас';
+    return `<div class="booking-item"><div class="booking-time">📅 ${formatDateTime(b.start)} — ${formatDateTime(b.end)}</div><div class="item-main">${b.client}</div><div class="item-sub">${p?.name||'—'} · ${b.price} ₽ · <span style="color:var(--purple);">${st}</span></div>${b.comment?`<div class="item-sub">${b.comment}</div>`:''}<div class="booking-actions"><button class="btn small ok" onclick="completeBookingNoPay(${b.id})">✓ Без оплаты</button><button class="btn small cyan" onclick="completeBookingWithPay(${b.id})">💰 Завершить</button><button class="btn small" onclick="openExtendModal(${b.id})">⏰ Продлить</button><button class="btn small danger" onclick="cancelBooking(${b.id})">✕ Отменить</button></div></div>`;
   }).join('');
 }
-
 function renderOrders() {
   const el = document.getElementById('orders');
-  const regularOrders = state.orders.filter(o => o.postId !== 0 && o.postId !== null);
-  if (!regularOrders.length) { el.innerHTML = '<div class="empty">Нет активных заказов</div>'; return; }
-  el.innerHTML = regularOrders.map(o => {
-    const post = state.posts.find(p => p.id === o.postId);
-    const elapsed = o.startedAt ? Math.round((Date.now() - o.startedAt) / 60000) : 0;
-    let deadlineHtml = '';
-    if (o.deadline) {
-      const cls = getDeadlineClass(o.deadline);
-      const prefix = cls === 'err' ? '⚠ Просрочено: ' : '⏱ Осталось: ';
-      deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
-    }
-    const statusBadge = o.status === 'in-progress' ? '<span class="badge busy" style="margin-left:6px;">В работе</span>' : '<span class="badge waiting" style="margin-left:6px;">Ожидает мастера</span>';
-    return `<div class="item"><div class="item-top"><span>#${o.id} ${deadlineHtml}${statusBadge}</span><span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span></div><div class="item-main">${o.car}</div><div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div><div class="item-sub">${post?.name || '—'} · ${o.master || 'Не назначен'} · ${o.price} ₽</div>${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"><button class="btn small ok" onclick="completeOrder(${o.id})">Завершить</button><button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">Изменить</button><button class="btn small danger" onclick="cancelOrder(${o.id})">Отменить</button></div></div>`;
+  const ro = state.orders.filter(o=>o.postId!==0&&o.postId!==null);
+  if (!ro.length) { el.innerHTML = '<div class="empty">Нет активных заказов</div>'; return; }
+  el.innerHTML = ro.map(o => {
+    const p = state.posts.find(x=>x.id===o.postId);
+    const e = o.startedAt?Math.round((Date.now()-o.startedAt)/60000):0;
+    let dl = ''; if (o.deadline) { const c = getDeadlineClass(o.deadline); dl = `<span class="deadline-badge ${c}">${c==='err'?'⚠ Просрочено: ':'⏱ Осталось: '}${formatCountdown(o.deadline)}</span>`; }
+    const sb = o.status==='in-progress'?'<span class="badge busy" style="margin-left:6px;">В работе</span>':'<span class="badge waiting" style="margin-left:6px;">Ожидает мастера</span>';
+    return `<div class="item"><div class="item-top"><span>#${o.id} ${dl}${sb}</span><span>${o.startedAt?e+' мин':'Ожидает'}</span></div><div class="item-main">${o.car}</div><div class="item-sub">${o.client} ${o.phone?'· '+o.phone:''} · ${o.services}</div><div class="item-sub">${p?.name||'—'} · ${o.master||'Не назначен'} · ${o.price} ₽</div>${o.deadline?`<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"><button class="btn small ok" onclick="completeOrder(${o.id})">Завершить</button><button class="btn small ghost" onclick="openPrintModal(${o.id})">🖨️ Печать</button><button class="btn small danger" onclick="cancelOrder(${o.id})">Отменить</button></div></div>`;
   }).join('');
 }
-
 function renderQueue() {
   document.getElementById('queue-count').textContent = state.queue.length;
   const el = document.getElementById('queue');
   if (!state.queue.length) { el.innerHTML = '<div class="empty">Очередь пуста</div>'; return; }
-  el.innerHTML = state.queue.map((q, i) => {
-    let deadlineHtml = '';
-    if (q.deadline) {
-      const cls = getDeadlineClass(q.deadline);
-      const prefix = cls === 'err' ? '⚠ ' : '⏱ ';
-      deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(q.deadline)}</span>`;
-    }
-    return `
-      <div class="item queue-item">
-        <div class="item-top">
-          <span>#${i+1} ${deadlineHtml}</span>
-          <span>${q.createdAt}</span>
-        </div>
-        <div class="item-main">${q.car}</div>
-        <div class="item-sub">${q.client} ${q.phone ? '· ' + q.phone : ''} · ${q.services}</div>
-        <div class="item-sub">${q.price} ₽</div>
-        ${q.deadline ? `<div class="item-sub">Выдать к: ${new Date(q.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
-      </div>
-    `;
+  el.innerHTML = state.queue.map((q,i) => {
+    let dl = ''; if (q.deadline) { const c = getDeadlineClass(q.deadline); dl = `<span class="deadline-badge ${c}">${c==='err'?'⚠ ':'⏱ '}${formatCountdown(q.deadline)}</span>`; }
+    return `<div class="item queue-item"><div class="item-top"><span>#${i+1} ${dl}</span><span>${q.createdAt}</span></div><div class="item-main">${q.car}</div><div class="item-sub">${q.client} ${q.phone?'· '+q.phone:''} · ${q.services}</div><div class="item-sub">${q.price} ₽</div>${q.deadline?`<div class="item-sub">Выдать к: ${new Date(q.deadline).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"><button class="btn small ghost" onclick="openClientHistory('${q.client.replace(/'/g,"\\'")}', '${q.phone||''}')">👤 История</button></div></div>`;
   }).join('');
 }
+function render() { renderStats(); renderPosts(); renderRepairZone(); renderBookings(); renderOrders(); renderQueue(); }
 
-function render() {
-  renderStats();
-  renderPosts();
-  renderRepairZone();
-  renderBookings();
-  renderOrders();
-  renderQueue();
-}
-
+// Мастера
 let editingMasterId = null;
-function openMastersModal() { editingMasterId = null; renderMastersList(); ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = ''); document.getElementById('mastersModal').classList.add('open'); }
+function openMastersModal() { editingMasterId = null; renderMastersList(); ['m-name','m-phone','m-spec'].forEach(id=>document.getElementById(id).value=''); document.getElementById('mastersModal').classList.add('open'); }
 function closeMastersModal() { document.getElementById('mastersModal').classList.remove('open'); }
 function renderMastersList() {
   const el = document.getElementById('mastersList');
   if (!state.masters.length) { el.innerHTML = '<div class="empty">Список мастеров пуст</div>'; return; }
-  el.innerHTML = state.masters.map(m => `<div class="master-item"><div class="master-info"><div class="master-name">${m.name}</div>${m.phone ? `<div class="master-phone">📞 ${m.phone}</div>` : ''}${m.spec ? `<div class="master-phone">🔧 ${m.spec}</div>` : ''}</div><div class="master-actions"><button class="btn small ghost" onclick="editMaster(${m.id})">✎</button><button class="btn small danger" onclick="deleteMaster(${m.id})">✕</button></div></div>`).join('');
+  el.innerHTML = state.masters.map(m => `<div class="master-item"><div class="master-info"><div class="master-name">${m.name}</div>${m.phone?`<div class="master-phone">📞 ${m.phone}</div>`:''}${m.spec?`<div class="master-phone">🔧 ${m.spec}</div>`:''}</div><div class="master-actions"><button class="btn small ghost" onclick="editMaster(${m.id})">✎</button><button class="btn small danger" onclick="deleteMaster(${m.id})">✕</button></div></div>`).join('');
 }
-function editMaster(id) { const m = state.masters.find(x => x.id == id); if (!m) return; editingMasterId = id; document.getElementById('m-name').value = m.name; document.getElementById('m-phone').value = m.phone || ''; document.getElementById('m-spec').value = m.spec || ''; }
+function editMaster(id) { const m = state.masters.find(x=>x.id==id); if (!m) return; editingMasterId = id; document.getElementById('m-name').value = m.name; document.getElementById('m-phone').value = m.phone||''; document.getElementById('m-spec').value = m.spec||''; }
 function saveMaster() {
-  const name = document.getElementById('m-name').value.trim();
-  if (!name) { alert('Введите имя мастера'); return; }
-  const data = { name, phone: document.getElementById('m-phone').value.trim(), spec: document.getElementById('m-spec').value.trim() };
-  if (editingMasterId) updateMaster(editingMasterId, data); else addMaster({ id: Date.now(), ...data });
-  ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = '');
+  const n = document.getElementById('m-name').value.trim();
+  if (!n) { alert('Введите имя мастера'); return; }
+  const d = { name: n, phone: document.getElementById('m-phone').value.trim(), spec: document.getElementById('m-spec').value.trim() };
+  if (editingMasterId) updateMaster(editingMasterId, d); else addMaster({ id: Date.now(), ...d });
+  ['m-name','m-phone','m-spec'].forEach(id=>document.getElementById(id).value='');
   editingMasterId = null;
 }
 function deleteMaster(id) { if (!confirm('Удалить мастера?')) return; removeMaster(id); }
 
+// Услуги
+let editingServiceId = null;
+function openServicesModal() { editingServiceId = null; renderServicesList(); ['s-category','s-name'].forEach(id=>document.getElementById(id).value=''); document.getElementById('s-price').value=0; document.getElementById('servicesModal').classList.add('open'); }
+function closeServicesModal() { document.getElementById('servicesModal').classList.remove('open'); }
+function renderServicesList() {
+  const el = document.getElementById('servicesList');
+  if (!state.services.length) { el.innerHTML = '<div class="empty">Справочник пуст</div>'; return; }
+  const grouped = {};
+  state.services.forEach(s => { const c = s.category||'Другое'; if (!grouped[c]) grouped[c] = []; grouped[c].push(s); });
+  el.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+    <div class="calc-category">${cat}</div>
+    ${items.map(s => `<div class="calc-service"><div class="calc-service-name">${s.name}</div><div class="calc-service-price">${s.price} ₽</div><div style="display:flex; gap:4px;"><button class="btn small ghost" onclick="editService(${s.id})">✎</button><button class="btn small danger" onclick="deleteService(${s.id})">✕</button></div></div>`).join('')}
+  `).join('');
+}
+function editService(id) { const s = state.services.find(x=>x.id==id); if (!s) return; editingServiceId = id; document.getElementById('s-category').value = s.category||''; document.getElementById('s-name').value = s.name; document.getElementById('s-price').value = s.price; }
+function saveService() {
+  const n = document.getElementById('s-name').value.trim();
+  if (!n) { alert('Введите название'); return; }
+  const d = { category: document.getElementById('s-category').value.trim(), name: n, price: parseInt(document.getElementById('s-price').value)||0 };
+  if (editingServiceId) updateService(editingServiceId, d); else addService({ id: Date.now(), ...d });
+  ['s-category','s-name'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('s-price').value = 0;
+  editingServiceId = null;
+  renderServicesList();
+}
+function deleteService(id) { if (!confirm('Удалить услугу?')) return; removeService(id); }
+
+// Калькулятор в заказе
+function openCalcInOrder() {
+  calcSelectedServices = [];
+  document.getElementById('calc-search').value = '';
+  renderCalcServices();
+  document.getElementById('calcModal').classList.add('open');
+}
+function closeCalcModal() { document.getElementById('calcModal').classList.remove('open'); }
+function renderCalcServices(filter='') {
+  const el = document.getElementById('calcServicesList');
+  const f = filter.toLowerCase();
+  const filtered = state.services.filter(s => !f || s.name.toLowerCase().includes(f) || (s.category||'').toLowerCase().includes(f));
+  if (!filtered.length) { el.innerHTML = '<div class="empty">Услуги не найдены</div>'; return; }
+  const grouped = {};
+  filtered.forEach(s => { const c = s.category||'Другое'; if (!grouped[c]) grouped[c] = []; grouped[c].push(s); });
+  el.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+    <div class="calc-category">${cat}</div>
+    ${items.map(s => {
+      const sel = calcSelectedServices.find(x=>x.id===s.id);
+      return `<div class="calc-service ${sel?'selected':''}" onclick="toggleCalcService(${s.id})">
+        <div class="calc-service-name">${s.name}</div>
+        <div class="calc-service-price">${sel?'✓ ':''}${s.price} ₽</div>
+      </div>`;
+    }).join('')}
+  `).join('');
+  updateCalcTotal();
+}
+function filterServices() { renderCalcServices(document.getElementById('calc-search').value); }
+function toggleCalcService(id) {
+  const s = state.services.find(x=>x.id===id);
+  if (!s) return;
+  const idx = calcSelectedServices.findIndex(x=>x.id===id);
+  if (idx >= 0) calcSelectedServices.splice(idx, 1); else calcSelectedServices.push({...s});
+  renderCalcServices(document.getElementById('calc-search').value);
+}
+function updateCalcTotal() {
+  const total = calcSelectedServices.reduce((s,x)=>s+x.price, 0);
+  document.getElementById('calcTotal').textContent = total.toLocaleString('ru-RU') + ' ₽';
+}
+function applyCalc() {
+  if (!calcSelectedServices.length) { closeCalcModal(); return; }
+  const total = calcSelectedServices.reduce((s,x)=>s+x.price, 0);
+  const servicesText = calcSelectedServices.map(s => s.name).join(', ');
+  document.getElementById('f-services').value = servicesText;
+  document.getElementById('f-price').value = total;
+  // Отображаем выбранные услуги
+  const listEl = document.getElementById('orderServicesList');
+  listEl.innerHTML = calcSelectedServices.map(s => `<div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 8px; background:var(--panel-2); border-radius:4px; margin-bottom:4px;"><span>${s.name}</span><span style="color:var(--accent); font-weight:600;">${s.price} ₽</span></div>`).join('');
+  closeCalcModal();
+}
+
+// История клиента
+function openClientHistory(clientName, clientPhone) {
+  const allOrders = [...state.history, ...state.orders, ...state.queue];
+  const clientOrders = allOrders.filter(o => 
+    (o.client && o.client.toLowerCase() === clientName.toLowerCase()) ||
+    (o.phone && o.phone === clientPhone)
+  );
+  
+  const totalSpent = clientOrders.reduce((s,o)=>s+(o.price||0), 0);
+  const cars = [...new Set(clientOrders.map(o=>o.car).filter(Boolean))];
+  
+  const el = document.getElementById('clientContent');
+  el.innerHTML = `
+    <div class="client-header">
+      <div class="client-name">${clientName}</div>
+      ${clientPhone?`<div class="client-phone">📞 ${clientPhone}</div>`:''}
+      <div class="client-stats">
+        <div class="client-stat"><div class="client-stat-value">${clientOrders.length}</div><div class="client-stat-label">Заказов</div></div>
+        <div class="client-stat"><div class="client-stat-value">${totalSpent.toLocaleString('ru-RU')} ₽</div><div class="client-stat-label">Всего потрачено</div></div>
+        <div class="client-stat"><div class="client-stat-value">${cars.length}</div><div class="client-stat-label">Автомобилей</div></div>
+      </div>
+      ${cars.length?`<div style="margin-top:12px; font-size:13px; color:var(--muted);">🚗 ${cars.join(' · ')}</div>`:''}
+    </div>
+    <h4 style="margin-bottom:12px; color:var(--muted); font-size:13px; text-transform:uppercase;">История заказов</h4>
+    ${clientOrders.length ? clientOrders.map(o => {
+      const isHistory = state.history.find(h=>h.id===o.id);
+      const isActive = state.orders.find(x=>x.id===o.id);
+      const isQueue = state.queue.find(x=>x.id===o.id);
+      const status = isHistory ? '<span class="badge free">Завершён</span>' : isActive ? '<span class="badge busy">В работе</span>' : '<span class="badge waiting">В очереди</span>';
+      const post = o.postId===0?'🔧 Ремонтная зона':(state.posts.find(p=>p.id==o.postId)?.name||'—');
+      return `<div class="item" style="margin-bottom:8px;"><div class="item-top"><span>#${o.id} ${status}</span><span>${o.finishedAt||o.createdAt||''}</span></div><div class="item-main">${o.car}</div><div class="item-sub">${o.services} · ${post} · ${o.master||'—'} · ${o.price} ₽</div></div>`;
+    }).join('') : '<div class="empty">Нет заказов</div>'}
+  `;
+  document.getElementById('clientModal').classList.add('open');
+}
+function closeClientModal() { document.getElementById('clientModal').classList.remove('open'); }
+
+// Печать
+function openPrintModal(orderId) {
+  const o = state.orders.find(x=>x.id===orderId) || state.history.find(h=>h.id===orderId);
+  if (!o) return;
+  const post = o.postId===0?'Ремонтная зона':(state.posts.find(p=>p.id==o.postId)?.name||'—');
+  const items = o.items || (o.services ? [{name: o.services, price: o.price}] : []);
+  const total = items.reduce((s,x)=>s+(x.price||0), 0) || o.price || 0;
+  const orderDate = new Date(o.startedAt || Date.now()).toLocaleString('ru-RU');
+  
+  document.getElementById('printArea').innerHTML = `
+    <div class="print-preview">
+      <div class="print-header">
+        <div>
+          <div class="print-logo">🏎️ DREAM GARAGE</div>
+          <div class="print-logo-sub">Premium Auto Service</div>
+        </div>
+        <div style="text-align:right; font-size:12px;">
+          <div>Заказ-наряд №${o.id}</div>
+          <div>от ${orderDate}</div>
+        </div>
+      </div>
+      <div class="print-title">Заказ-наряд на выполнение работ</div>
+      <div class="print-info">
+        <div class="print-info-row"><div class="print-info-label">Клиент:</div><div class="print-info-value">${o.client||'—'}</div></div>
+        <div class="print-info-row"><div class="print-info-label">Телефон:</div><div class="print-info-value">${o.phone||'—'}</div></div>
+        <div class="print-info-row"><div class="print-info-label">Автомобиль:</div><div class="print-info-value">${o.car||'—'}</div></div>
+        <div class="print-info-row"><div class="print-info-label">Место работы:</div><div class="print-info-value">${post}</div></div>
+        <div class="print-info-row"><div class="print-info-label">Мастер:</div><div class="print-info-value">${o.master||'Не назначен'}</div></div>
+        ${o.deadline?`<div class="print-info-row"><div class="print-info-label">Выдать к:</div><div class="print-info-value">${new Date(o.deadline).toLocaleString('ru-RU')}</div></div>`:''}
+      </div>
+      <table class="print-table">
+        <thead><tr><th>№</th><th>Наименование работ</th><th style="width:120px;">Стоимость, ₽</th></tr></thead>
+        <tbody>
+          ${items.map((it,i) => `<tr><td>${i+1}</td><td>${it.name}</td><td style="text-align:right;">${(it.price||0).toLocaleString('ru-RU')}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="print-total">Итого к оплате: ${total.toLocaleString('ru-RU')} ₽</div>
+      <div class="print-signatures">
+        <div><div class="print-sign-line">Мастер / Исполнитель</div></div>
+        <div><div class="print-sign-line">Клиент / Заказчик</div></div>
+      </div>
+      <div style="margin-top:30px; font-size:11px; color:#666; text-align:center;">
+        Dream Garage · Premium Auto Service<br>
+        Спасибо, что выбрали нас!
+      </div>
+    </div>
+  `;
+  document.getElementById('printModal').classList.add('open');
+}
+function closePrintModal() { document.getElementById('printModal').classList.remove('open'); }
+
+// Бронирования
 function openBookingModal() {
-  document.getElementById('b-post').innerHTML = state.posts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-  const now = new Date();
-  document.getElementById('b-start').value = toLocalDatetime(now.getTime());
-  document.getElementById('b-end').value = toLocalDatetime(now.getTime() + 60 * 60 * 1000);
-  document.getElementById('b-client').value = '';
+  document.getElementById('b-post').innerHTML = state.posts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  const n = new Date();
+  document.getElementById('b-start').value = toLocalDatetime(n.getTime());
+  document.getElementById('b-end').value = toLocalDatetime(n.getTime()+60*60*1000);
+  ['b-client','b-comment'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('b-price').value = 0;
-  document.getElementById('b-comment').value = '';
   document.getElementById('bookingModal').classList.add('open');
 }
 function closeBookingModal() { document.getElementById('bookingModal').classList.remove('open'); }
@@ -1067,71 +822,40 @@ function saveBooking() {
   const client = document.getElementById('b-client').value.trim();
   const start = new Date(document.getElementById('b-start').value).getTime();
   const end = new Date(document.getElementById('b-end').value).getTime();
-  const price = parseInt(document.getElementById('b-price').value) || 0;
+  const price = parseInt(document.getElementById('b-price').value)||0;
   const comment = document.getElementById('b-comment').value.trim();
   if (!client) { alert('Введите клиента'); return; }
-  if (end <= start) { alert('Время окончания должно быть позже начала'); return; }
-  if (start < Date.now()) { if (!confirm('Время начала уже прошло. Продолжить?')) return; }
+  if (end<=start) { alert('Время окончания должно быть позже начала'); return; }
   addBooking({ id: Date.now(), postId, client, start, end, price, comment });
-  state.bookingRevenue += price;
-  updateStats();
-  closeBookingModal();
+  state.bookingRevenue += price; updateStats(); closeBookingModal();
 }
-
-function completeBookingNoPay(id) {
-  if (!confirm('Завершить бронирование без оплаты? Деньги будут возвращены.')) return;
-  const booking = state.bookings.find(b => b.id == id);
-  if (booking) { state.bookingRevenue -= booking.price; updateStats(); }
-  removeBooking(id);
-}
-
-function completeBookingWithPay(id) {
-  if (!confirm('Завершить бронирование досрочно? Оплата уже учтена.')) return;
-  removeBooking(id);
-}
-
+function completeBookingNoPay(id) { if (!confirm('Завершить без оплаты? Деньги будут возвращены.')) return; const b = state.bookings.find(x=>x.id==id); if (b) { state.bookingRevenue -= b.price; updateStats(); } removeBooking(id); }
+function completeBookingWithPay(id) { if (!confirm('Завершить досрочно?')) return; removeBooking(id); }
 let extendingBookingId = null;
-function openExtendModal(id) {
-  const booking = state.bookings.find(b => b.id == id);
-  if (!booking) return;
-  extendingBookingId = id;
-  document.getElementById('extendCurrentEnd').textContent = formatDateTime(booking.end);
-  document.getElementById('extend-new-end').value = toLocalDatetime(booking.end + 60 * 60 * 1000);
-  document.getElementById('extend-price').value = 0;
-  document.getElementById('extendBookingModal').classList.add('open');
-}
+function openExtendModal(id) { const b = state.bookings.find(x=>x.id==id); if (!b) return; extendingBookingId = id; document.getElementById('extendCurrentEnd').textContent = formatDateTime(b.end); document.getElementById('extend-new-end').value = toLocalDatetime(b.end+60*60*1000); document.getElementById('extend-price').value = 0; document.getElementById('extendBookingModal').classList.add('open'); }
 function closeExtendModal() { document.getElementById('extendBookingModal').classList.remove('open'); extendingBookingId = null; }
 function saveExtendBooking() {
   if (!extendingBookingId) return;
   const newEnd = new Date(document.getElementById('extend-new-end').value).getTime();
-  const additionalPrice = parseInt(document.getElementById('extend-price').value) || 0;
-  const booking = state.bookings.find(b => b.id == extendingBookingId);
-  if (!booking) return;
-  if (newEnd <= booking.start) { alert('Новое время окончания должно быть позже начала'); return; }
-  updateBooking(extendingBookingId, { end: newEnd, price: booking.price + additionalPrice });
-  state.bookingRevenue += additionalPrice;
-  updateStats();
-  closeExtendModal();
+  const addPrice = parseInt(document.getElementById('extend-price').value)||0;
+  const b = state.bookings.find(x=>x.id==extendingBookingId);
+  if (!b) return;
+  if (newEnd<=b.start) { alert('Новое время должно быть позже начала'); return; }
+  updateBooking(extendingBookingId, { end: newEnd, price: b.price+addPrice });
+  state.bookingRevenue += addPrice; updateStats(); closeExtendModal();
 }
+function cancelBooking(id) { if (!confirm('Отменить бронирование?')) return; const b = state.bookings.find(x=>x.id==id); if (b) { state.bookingRevenue -= b.price; updateStats(); } removeBooking(id); }
 
-function cancelBooking(id) {
-  if (!confirm('Отменить бронирование?')) return;
-  const booking = state.bookings.find(b => b.id == id);
-  if (booking) { state.bookingRevenue -= booking.price; updateStats(); }
-  removeBooking(id);
-}
-
-// ✅ Заказы теперь попадают в очередь
-function openOrderModal(order = null) {
+// Заказы
+function openOrderModal() {
   document.getElementById('modalTitle').textContent = 'Новый заказ-наряд';
-  ['f-client','f-phone','f-car','f-services','f-deadline'].forEach(id => document.getElementById(id).value = '');
+  ['f-client','f-phone','f-car','f-services','f-deadline'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-price').value = 0;
+  document.getElementById('orderServicesList').innerHTML = '';
+  calcSelectedServices = [];
   document.getElementById('orderModal').classList.add('open');
 }
-function toLocalDatetime(ts) { const d = new Date(ts); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 function closeModal() { document.getElementById('orderModal').classList.remove('open'); }
-
-// ✅ Заказ добавляется в очередь без мастера и подъёмника
 function saveOrder() {
   const deadlineVal = document.getElementById('f-deadline').value;
   const data = {
@@ -1140,45 +864,35 @@ function saveOrder() {
     phone: document.getElementById('f-phone').value.trim(),
     car: document.getElementById('f-car').value.trim(),
     services: document.getElementById('f-services').value.trim(),
-    price: parseInt(document.getElementById('f-price').value) || 0,
-    deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
-    createdAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
+    items: calcSelectedServices.length ? calcSelectedServices : null,
+    price: parseInt(document.getElementById('f-price').value)||0,
+    deadline: deadlineVal?new Date(deadlineVal).getTime():null,
+    createdAt: new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})
   };
-  if (!data.client || !data.car) { alert('Заполните клиента и авто'); return; }
-  if (data.deadline && data.deadline <= Date.now()) { if (!confirm('Указанное время уже прошло. Продолжить?')) return; }
-  addToQueue(data);
-  closeModal();
+  if (!data.client||!data.car) { alert('Заполните клиента и авто'); return; }
+  if (data.deadline&&data.deadline<=Date.now()) { if (!confirm('Время уже прошло. Продолжить?')) return; }
+  addToQueue(data); closeModal();
 }
-
 function completeOrder(id) {
-  const o = state.orders.find(x => x.id == id);
-  if (!o) return;
+  const o = state.orders.find(x=>x.id==id); if (!o) return;
   updateDailyStats(o);
-  addToHistory({ ...o, finishedAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}) });
-  state.revenue += o.price;
-  state.servedToday++;
+  addToHistory({...o, finishedAt: new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})});
+  state.revenue += o.price; state.servedToday++;
   removeOrder(id);
-  if (o.postId && o.postId !== 0) updatePost(o.postId, { status: 'free' });
+  if (o.postId&&o.postId!==0) updatePost(o.postId, { status: 'free' });
   updateStats();
 }
-
-function cancelOrder(id) {
-  if (!confirm('Отменить заказ?')) return;
-  const o = state.orders.find(x => x.id == id);
-  removeOrder(id);
-  if (o.postId && o.postId !== 0) updatePost(o.postId, { status: 'free' });
-}
-
+function cancelOrder(id) { if (!confirm('Отменить заказ?')) return; const o = state.orders.find(x=>x.id==id); removeOrder(id); if (o.postId&&o.postId!==0) updatePost(o.postId, { status: 'free' }); }
 function cycleStatus(postId) {
-  const p = state.posts.find(x => x.id == postId);
-  const order = state.orders.find(o => o.postId == postId);
-  if (order && p.status === 'busy') { if (confirm('На этом подъёмнике активный заказ. Завершить его?')) completeOrder(order.id); return; }
-  const cycle = ['free','busy','waiting'];
-  updatePost(postId, { status: cycle[(cycle.indexOf(p.status) + 1) % cycle.length] });
+  const p = state.posts.find(x=>x.id==postId);
+  const o = state.orders.find(x=>x.postId==postId);
+  if (o&&p.status==='busy') { if (confirm('Активный заказ. Завершить?')) completeOrder(o.id); return; }
+  const c = ['free','busy','waiting'];
+  updatePost(postId, { status: c[(c.indexOf(p.status)+1)%c.length] });
 }
 
 function openRepairModal() {
-  ['r-client','r-phone','r-car','r-services','r-deadline'].forEach(id => document.getElementById(id).value = '');
+  ['r-client','r-phone','r-car','r-services','r-deadline'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('r-price').value = 0;
   document.getElementById('repairModal').classList.add('open');
 }
@@ -1191,23 +905,17 @@ function saveRepair() {
     phone: document.getElementById('r-phone').value.trim(),
     car: document.getElementById('r-car').value.trim(),
     services: document.getElementById('r-services').value.trim(),
-    price: parseInt(document.getElementById('r-price').value) || 0,
-    postId: 0,
-    startedAt: Date.now(),
-    deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
+    price: parseInt(document.getElementById('r-price').value)||0,
+    postId: 0, startedAt: Date.now(),
+    deadline: deadlineVal?new Date(deadlineVal).getTime():null,
     status: 'in-progress',
-    createdAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
+    createdAt: new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})
   };
-  if (!data.client || !data.car) { alert('Заполните клиента и авто'); return; }
-  if (data.deadline && data.deadline <= Date.now()) { if (!confirm('Указанное время уже прошло. Продолжить?')) return; }
-  addOrder(data);
-  closeRepairModal();
+  if (!data.client||!data.car) { alert('Заполните клиента и авто'); return; }
+  addOrder(data); closeRepairModal();
 }
 
-function tickClock() {
-  const d = new Date();
-  document.getElementById('clock').textContent = d.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'}) + ' · ' + d.toLocaleTimeString('ru-RU');
-}
+function tickClock() { const d = new Date(); document.getElementById('clock').textContent = d.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}) + ' · ' + d.toLocaleTimeString('ru-RU'); }
 function updateTimers() { renderStats(); renderPosts(); renderOrders(); renderBookings(); renderRepairZone(); }
 setInterval(tickClock, 1000);
 setInterval(updateTimers, 1000);
