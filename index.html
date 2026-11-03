@@ -389,7 +389,7 @@
       <textarea id="f-services" rows="2" placeholder="Замена масла, фильтров"></textarea>
     </div>
     <div class="form-group">
-      <label>Мастер</label>
+      <label>Мастер (опционально)</label>
       <select id="f-master"></select>
     </div>
     <div class="form-group">
@@ -412,20 +412,16 @@
 </div>
 
 <script>
-// ===== ВАЖНО: Вставьте сюда свою конфигурацию Firebase =====
+// ===== Конфигурация Firebase =====
 const firebaseConfig = {
-  apiKey: "AIzaSyALbJZS2dfNqtC47glcDp_DmEVCsTp2_Mw",
+  apiKey: "AIzaSyALbJZSZdfNqtc47gIcDp_DmEVcsTp2_Mw",
   authDomain: "dream-garage-4bff9.firebaseapp.com",
-  databaseURL: "https://dream-garage-4bff9-default-rtdb.europe-west1.firebasedatabase.app/",
+  databaseURL: "https://dream-garage-4bff9-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "dream-garage-4bff9",
   storageBucket: "dream-garage-4bff9.firebasestorage.app",
   messagingSenderId: "1043595691448",
-  appId: "1:1043595691448:web:7bd610400cf417010e7b4d"
+  appId: "1:1043595691448:web:7bd610400cf41701e7b4d"
 };
-
-// Initialize Firebase
-//const app = initializeApp(firebaseConfig);
-
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -572,6 +568,7 @@ function getDeadlineClass(deadlineTs) {
   return 'ok';
 }
 
+// ✅ ИСПРАВЛЕНИЕ: используем ID мастера вместо имени (Firebase не любит точки в ключах)
 function updateDailyStats(order) {
   const today = getTodayKey();
   if (!state.dailyStats[today]) {
@@ -579,9 +576,13 @@ function updateDailyStats(order) {
   }
   state.dailyStats[today].revenue += order.price || 0;
   state.dailyStats[today].orders += 1;
-  const master = order.master || 'Не назначен';
-  if (!state.dailyStats[today].masters[master]) state.dailyStats[today].masters[master] = 0;
-  state.dailyStats[today].masters[master] += order.price || 0;
+  
+  const masterId = order.masterId || 'unassigned';
+  if (!state.dailyStats[today].masters[masterId]) {
+    state.dailyStats[today].masters[masterId] = 0;
+  }
+  state.dailyStats[today].masters[masterId] += order.price || 0;
+  
   updateStats();
 }
 
@@ -649,24 +650,31 @@ function renderWeeklyReports() {
   });
 }
 
+// ✅ ИСПРАВЛЕНИЕ: подставляем имена мастеров по ID
 function renderMastersReports() {
   destroyCharts();
   const mastersData = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const s = state.dailyStats[getDateKey(d)];
-    if (s) Object.entries(s.masters).forEach(([m, r]) => { mastersData[m] = (mastersData[m] || 0) + r; });
+    if (s) Object.entries(s.masters).forEach(([id, r]) => { mastersData[id] = (mastersData[id] || 0) + r; });
   }
-  const masters = Object.keys(mastersData);
-  if (!masters.length) {
+  const masterIds = Object.keys(mastersData);
+  if (!masterIds.length) {
     document.getElementById('reportContent').innerHTML = '<div class="empty">Нет данных по мастерам</div>';
     return;
   }
+  
+  const labels = masterIds.map(id => {
+    const m = state.masters.find(x => String(x.id) === String(id));
+    return m ? m.name : (id === 'unassigned' ? 'Не назначен' : id);
+  });
+  
   document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Выручка по мастерам (7 дней)</div><canvas id="mastersChart"></canvas></div>`;
   const colors = ['rgba(59,130,246,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.8)','rgba(239,68,68,0.8)','rgba(99,102,241,0.8)'];
   charts.masters = new Chart(document.getElementById('mastersChart').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: masters, datasets: [{ data: Object.values(mastersData), backgroundColor: colors.slice(0, masters.length), borderWidth: 0 }] },
+    data: { labels: labels, datasets: [{ data: Object.values(mastersData), backgroundColor: colors.slice(0, masterIds.length), borderWidth: 0 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
@@ -723,9 +731,9 @@ function renderPosts() {
     const o = state.orders.find(x => x.postId === p.id);
     let info = '', timer = '', deadline = '';
     if (o) {
-      const elapsed = Date.now() - o.startedAt;
+      const elapsed = o.startedAt ? Date.now() - o.startedAt : 0;
       info = `<div class="post-info active">${o.car} · ${o.master || '—'}</div>`;
-      timer = `<div class="post-timer active">${formatTime(elapsed)}</div>`;
+      timer = `<div class="post-timer active">${o.startedAt ? formatTime(elapsed) : 'Ожидает'}</div>`;
       if (o.deadline) {
         const cls = getDeadlineClass(o.deadline);
         const label = cls === 'err' ? 'Просрочено' : 'Осталось';
@@ -757,22 +765,25 @@ function renderOrders() {
   }
   el.innerHTML = state.orders.map(o => {
     const post = state.posts.find(p => p.id === o.postId);
-    const elapsed = Math.round((Date.now() - o.startedAt) / 60000);
+    const elapsed = o.startedAt ? Math.round((Date.now() - o.startedAt) / 60000) : 0;
     let deadlineHtml = '';
     if (o.deadline) {
       const cls = getDeadlineClass(o.deadline);
       const prefix = cls === 'err' ? '⚠ Просрочено: ' : '⏱ Осталось: ';
       deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
     }
+    const statusBadge = o.status === 'in-progress' 
+      ? '<span class="badge busy" style="margin-left:6px;">В работе</span>' 
+      : '<span class="badge waiting" style="margin-left:6px;">Ожидает мастера</span>';
     return `
       <div class="item">
         <div class="item-top">
-          <span>#${o.id} ${deadlineHtml}</span>
-          <span>${elapsed} мин</span>
+          <span>#${o.id} ${deadlineHtml}${statusBadge}</span>
+          <span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span>
         </div>
         <div class="item-main">${o.car}</div>
         <div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div>
-        <div class="item-sub">${post?.name || '—'} · ${o.master || '—'} · ${o.price} ₽</div>
+        <div class="item-sub">${post?.name || '—'} · ${o.master || 'Не назначен'} · ${o.price} ₽</div>
         ${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
         <div style="margin-top:8px; display:flex; gap:6px;">
           <button class="btn small" onclick="completeOrder(${o.id})">Завершить</button>
@@ -801,13 +812,16 @@ function renderQueue() {
 function renderHistory() {
   const el = document.getElementById('history');
   if (!state.history.length) { el.innerHTML = '<div class="empty">Пока нет завершённых работ</div>'; return; }
-  el.innerHTML = state.history.slice(0, 10).map(h => `
-    <div class="item">
-      <div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div>
-      <div class="item-main">${h.car}</div>
-      <div class="item-sub">${h.services} · ${h.master || '—'} · ${h.price} ₽</div>
-    </div>
-  `).join('');
+  el.innerHTML = state.history.slice(0, 10).map(h => {
+    const masterName = h.masterId ? (state.masters.find(m => String(m.id) === String(h.masterId))?.name || h.master) : h.master;
+    return `
+      <div class="item">
+        <div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div>
+        <div class="item-main">${h.car}</div>
+        <div class="item-sub">${h.services} · ${masterName || '—'} · ${h.price} ₽</div>
+      </div>
+    `;
+  }).join('');
 }
 
 function render() {
@@ -922,20 +936,25 @@ function toLocalDatetime(ts) {
 
 function closeModal() { document.getElementById('orderModal').classList.remove('open'); }
 
+// ✅ ИСПРАВЛЕНИЕ: при создании заказа подъёмник НЕ становится busy, мастер не обязателен
 function saveOrder() {
   const postId = parseInt(document.getElementById('f-post').value);
   if (!postId) { alert('Выберите подъёмник'); return; }
   const deadlineVal = document.getElementById('f-deadline').value;
+  const masterName = document.getElementById('f-master').value;
+  const master = state.masters.find(m => m.name === masterName);
+  
   const data = {
     id: editingOrder?.id || Date.now(),
     client: document.getElementById('f-client').value.trim(),
     phone: document.getElementById('f-phone').value.trim(),
     car: document.getElementById('f-car').value.trim(),
     services: document.getElementById('f-services').value.trim(),
-    master: document.getElementById('f-master').value,
+    master: masterName || null,
+    masterId: master ? String(master.id) : null,
     price: parseInt(document.getElementById('f-price').value) || 0,
     postId: postId,
-    startedAt: editingOrder?.startedAt || Date.now(),
+    startedAt: editingOrder?.startedAt || null,
     deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
     status: editingOrder?.status || 'new'
   };
@@ -948,7 +967,7 @@ function saveOrder() {
     updateOrder(editingOrder.id, data);
   } else {
     addOrder(data);
-    updatePost(postId, { status: 'busy' });
+    // ✅ Подъёмник НЕ делаем busy при создании — только когда мастер возьмёт заказ
   }
   closeModal();
 }
