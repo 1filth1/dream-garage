@@ -23,6 +23,8 @@
     --warn: #f59e0b;
     --info: #6366f1;
     --err: #ef4444;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -33,6 +35,7 @@
     padding-bottom: 20px;
     -webkit-tap-highlight-color: transparent;
   }
+  
   header {
     background: var(--panel);
     padding: 16px;
@@ -67,6 +70,7 @@
   }
   .sync-status.connected { color: var(--ok); }
   .sync-status.disconnected { color: var(--err); }
+  
   .tabs { display: flex; gap: 8px; }
   .tab {
     flex: 1;
@@ -90,7 +94,9 @@
     font-size: 11px;
     margin-left: 4px;
   }
+  
   .content { padding: 16px; }
+  
   .order-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -99,10 +105,14 @@
     margin-bottom: 12px;
     border-left: 4px solid var(--border);
     cursor: pointer;
+    transition: transform 0.15s;
   }
-  .order-card.new { border-left-color: var(--info); }
+  .order-card:active { transform: scale(0.98); }
+  .order-card.queue { border-left-color: var(--info); }
   .order-card.in-progress { border-left-color: var(--warn); }
   .order-card.completed { border-left-color: var(--ok); }
+  .order-card.repair { border-left-color: var(--cyan); }
+  
   .order-header {
     display: flex;
     justify-content: space-between;
@@ -111,10 +121,22 @@
   }
   .order-id { font-size: 12px; color: var(--muted); }
   .order-time { font-size: 12px; color: var(--muted); }
+  
   .order-main { margin-bottom: 12px; }
   .order-car { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
   .order-client { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
   .order-services { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .order-price-tag {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 3px 10px;
+    background: rgba(59,130,246,0.15);
+    color: var(--accent);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
   .order-footer {
     display: flex;
     justify-content: space-between;
@@ -126,6 +148,7 @@
   }
   .order-price { font-size: 16px; font-weight: 700; color: var(--accent); }
   .order-actions { display: flex; gap: 8px; }
+  
   .deadline-badge {
     display: inline-block;
     padding: 3px 8px;
@@ -139,6 +162,7 @@
   .deadline-badge.warn { background: rgba(245,158,11,0.2); color: var(--warn); }
   .deadline-badge.err { background: rgba(239,68,68,0.2); color: var(--err); animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: 0.6; } }
+  
   .btn {
     background: var(--accent);
     color: white;
@@ -153,7 +177,11 @@
   .btn:active { opacity: 0.7; }
   .btn.small { padding: 8px 12px; font-size: 13px; }
   .btn.ok { background: var(--ok); }
+  .btn.warn { background: var(--warn); }
+  .btn.cyan { background: var(--cyan); }
   .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn.full { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; }
+  
   .badge {
     display: inline-block;
     padding: 4px 10px;
@@ -162,11 +190,13 @@
     font-weight: 600;
     text-transform: uppercase;
   }
-  .badge.new { background: rgba(99,102,241,0.2); color: var(--info); }
+  .badge.queue { background: rgba(99,102,241,0.2); color: var(--info); }
   .badge.in-progress { background: rgba(245,158,11,0.2); color: var(--warn); }
   .badge.completed { background: rgba(16,185,129,0.2); color: var(--ok); }
+  
   .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
   .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  
   .modal {
     display: none;
     position: fixed;
@@ -194,6 +224,37 @@
   .detail-value { font-size: 14px; }
   .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
   .modal-actions .btn { flex: 1; }
+  
+  .post-option {
+    background: var(--panel-2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .post-option:hover { border-color: var(--accent); }
+  .post-option.selected { border-color: var(--accent); background: rgba(59,130,246,0.1); }
+  .post-option.repair-zone { border-color: var(--cyan); }
+  .post-option.repair-zone.selected { background: rgba(6,182,212,0.1); }
+  .post-option-name { font-weight: 600; font-size: 14px; }
+  .post-option-status { font-size: 12px; color: var(--muted); }
+  .post-option-status.free { color: var(--ok); }
+  
+  .queue-info {
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .queue-info strong { color: var(--info); }
 </style>
 </head>
 <body>
@@ -201,7 +262,7 @@
 <header>
   <div class="header-top">
     <h1>🏎️ <span>Dream</span> Garage</h1>
-    <div style="display:flex; align-items:center;">
+    <div>
       <select class="master-select" id="masterSelect" onchange="changeMaster()">
         <option value="">Мастер...</option>
       </select>
@@ -209,25 +270,42 @@
     </div>
   </div>
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('new', this)">
-      Доступные <span class="count" id="newCount">0</span>
+    <div class="tab active" onclick="switchTab('queue', this)">
+      Очередь <span class="count" id="queueCount">0</span>
     </div>
-    <div class="tab" onclick="switchTab('in-progress', this)">
-      Мои <span class="count" id="progressCount">0</span>
+    <div class="tab" onclick="switchTab('mine', this)">
+      Мои <span class="count" id="mineCount">0</span>
     </div>
-    <div class="tab" onclick="switchTab('completed', this)">
-      Завершённые <span class="count" id="completedCount">0</span>
+    <div class="tab" onclick="switchTab('done', this)">
+      Готово <span class="count" id="doneCount">0</span>
     </div>
   </div>
 </header>
 
 <div class="content" id="content"></div>
 
+<!-- Модалка деталей -->
 <div class="modal" id="detailModal">
   <div class="modal-content">
     <h3 id="modalTitle">Детали наряда</h3>
     <div id="modalBody"></div>
     <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- Модалка выбора подъёмника -->
+<div class="modal" id="postSelectModal">
+  <div class="modal-content">
+    <h3>🔧 Выберите место для работы</h3>
+    <div class="queue-info">
+      Заказ: <strong id="pickCar"></strong><br>
+      <span id="pickServices" style="font-size:12px; color:var(--muted);"></span>
+    </div>
+    <div id="postOptions"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn ghost" onclick="closePostSelect()">Отмена</button>
+      <button class="btn ok" id="confirmPickBtn" onclick="confirmPick()" disabled>✓ Взять заказ</button>
+    </div>
   </div>
 </div>
 
@@ -250,12 +328,19 @@ const MASTER_KEY = 'dg_master_id';
 const MASTER_NAME_KEY = 'dg_master_name';
 let currentMaster = localStorage.getItem(MASTER_KEY) || '';
 let currentMasterName = localStorage.getItem(MASTER_NAME_KEY) || '';
-let currentTab = 'new';
+let currentTab = 'queue';
+let allQueue = [];
 let allOrders = [];
 let allHistory = [];
 let allPosts = [];
 let allMasters = [];
 
+// Для выбора подъёмника
+let pickingOrderId = null;
+let selectedPostId = null;
+let isRepairZone = false;
+
+// ===== Инициализация =====
 function init() {
   const connectedRef = db.ref('.info/connected');
   connectedRef.on('value', (snap) => {
@@ -275,6 +360,12 @@ function init() {
     const select = document.getElementById('masterSelect');
     select.innerHTML = '<option value="">Мастер...</option>' +
       allMasters.map(m => `<option value="${m.id}" ${String(m.id) === String(currentMaster) ? 'selected' : ''}>${m.name}</option>`).join('');
+    render();
+  });
+
+  db.ref('queue').on('value', (snapshot) => {
+    const data = snapshot.val();
+    allQueue = data ? Object.values(data).sort((a,b) => (a.createdAt||'').localeCompare(b.createdAt||'')) : [];
     render();
   });
 
@@ -300,6 +391,7 @@ function init() {
   }
   
   render();
+  // Обновление таймеров каждые 30 секунд
   setInterval(render, 30000);
 }
 
@@ -313,11 +405,14 @@ function changeMaster() {
   render();
 }
 
+// ===== Firebase операции =====
 function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(updates); }
+function addOrder(order) { db.ref(`orders/${order.id}`).set(order); }
 function updatePost(postId, updates) { db.ref(`posts/${postId}`).update(updates); }
 function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
-function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
+function removeFromQueue(orderId) { db.ref(`queue/${orderId}`).remove(); }
 
+// ===== Рендер =====
 function switchTab(tab, el) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -356,7 +451,7 @@ function getDeadlineClass(deadlineTs) {
 }
 
 function getStatusLabel(status) {
-  const labels = { 'new': 'Доступен', 'in-progress': 'В работе', 'completed': 'Завершён' };
+  const labels = { 'queue': 'В очереди', 'in-progress': 'В работе', 'completed': 'Завершён' };
   return labels[status] || status;
 }
 
@@ -371,30 +466,28 @@ function render() {
     return;
   }
   
-  // ✅ Доступные заказы — все новые (без мастера или любой новый)
-  const availableOrders = allOrders.filter(o => o.status === 'new' || !o.status);
-  // ✅ Мои заказы — те, где я мастер и статус in-progress
+  // Мои заказы — где я мастер и статус in-progress
   const myOrders = allOrders.filter(o => o.master === currentMasterName && o.status === 'in-progress');
-  // ✅ Завершённые — история
+  // Завершённые — история
   const completed = allHistory.filter(h => h.master === currentMasterName || !h.master);
   
-  document.getElementById('newCount').textContent = availableOrders.length;
-  document.getElementById('progressCount').textContent = myOrders.length;
-  document.getElementById('completedCount').textContent = completed.length;
+  document.getElementById('queueCount').textContent = allQueue.length;
+  document.getElementById('mineCount').textContent = myOrders.length;
+  document.getElementById('doneCount').textContent = completed.length;
   
   const content = document.getElementById('content');
   let items = [];
   
-  if (currentTab === 'new') items = availableOrders;
-  else if (currentTab === 'in-progress') items = myOrders;
-  else if (currentTab === 'completed') items = completed;
+  if (currentTab === 'queue') items = allQueue;
+  else if (currentTab === 'mine') items = myOrders;
+  else if (currentTab === 'done') items = completed;
   
   if (!items.length) {
-    const emptyText = currentTab === 'new' ? 'Нет доступных заказов' : 
-                      currentTab === 'in-progress' ? 'Нет заказов в работе' : 'Нет завершённых';
+    const emptyText = currentTab === 'queue' ? 'Очередь пуста 🎉' : 
+                      currentTab === 'mine' ? 'Нет заказов в работе' : 'Нет завершённых';
     content.innerHTML = `
       <div class="empty">
-        <div class="empty-icon">📋</div>
+        <div class="empty-icon">${currentTab === 'queue' ? '📭' : '📋'}</div>
         <div>${emptyText}</div>
       </div>
     `;
@@ -402,8 +495,9 @@ function render() {
   }
   
   content.innerHTML = items.map(o => {
-    const status = o.status || 'new';
-    const time = o.startedAt ? formatTime(Date.now() - o.startedAt) : '—';
+    const status = currentTab === 'queue' ? 'queue' : (o.status || 'in-progress');
+    const isRepair = o.postId === 0;
+    const time = o.startedAt ? formatTime(Date.now() - o.startedAt) : (o.createdAt || '—');
     let deadlineHtml = '';
     if (o.deadline && status !== 'completed') {
       const cls = getDeadlineClass(o.deadline);
@@ -412,13 +506,15 @@ function render() {
     }
     
     const post = allPosts.find(p => p.id == o.postId);
+    const postLabel = isRepair ? '🔧 Без подъёмника' : (post?.name || '—');
     
     return `
-      <div class="order-card ${status}" onclick="showDetails(${o.id})">
+      <div class="order-card ${status} ${isRepair ? 'repair' : ''}" onclick="showDetails(${o.id})">
         <div class="order-header">
           <div>
             <div class="order-id">#${o.id} ${deadlineHtml}</div>
             <span class="badge ${status}">${getStatusLabel(status)}</span>
+            ${isRepair ? '<span class="badge" style="background:rgba(6,182,212,0.2); color:var(--cyan); margin-left:4px;">Ремонтная зона</span>' : ''}
           </div>
           <div class="order-time">${time}</div>
         </div>
@@ -426,14 +522,14 @@ function render() {
           <div class="order-car">${o.car}</div>
           <div class="order-client">${o.client} ${o.phone ? '· ' + o.phone : ''}</div>
           <div class="order-services">${o.services}</div>
-          ${post ? `<div class="order-client" style="margin-top:6px;">📍 ${post.name}</div>` : ''}
+          <div class="order-price-tag">${o.price} ₽</div>
         </div>
+        ${currentTab === 'mine' ? `
+          <div class="item-sub" style="margin-top:8px; color:var(--muted); font-size:12px;">📍 ${postLabel}</div>
+        ` : ''}
         <div class="order-footer">
-          <div class="order-price">${o.price} ₽</div>
-          <div class="order-actions">
-            ${status === 'new' ? `<button class="btn small ok" onclick="event.stopPropagation(); takeOrder(${o.id})">🤝 Взять заказ</button>` : ''}
-            ${status === 'in-progress' ? `<button class="btn small ok" onclick="event.stopPropagation(); completeWork(${o.id})">✓ Завершить</button>` : ''}
-          </div>
+          ${currentTab === 'queue' ? `<button class="btn ok" onclick="event.stopPropagation(); openPostSelect(${o.id})">🤝 Взять заказ</button>` : ''}
+          ${currentTab === 'mine' ? `<button class="btn ok" onclick="event.stopPropagation(); completeWork(${o.id})">✓ Завершить</button>` : ''}
         </div>
       </div>
     `;
@@ -441,11 +537,14 @@ function render() {
 }
 
 function showDetails(orderId) {
-  const order = allOrders.find(o => o.id == orderId) || allHistory.find(h => h.id == orderId);
+  const order = allQueue.find(o => o.id == orderId) || 
+                allOrders.find(o => o.id == orderId) || 
+                allHistory.find(h => h.id == orderId);
   if (!order) return;
   
   const post = allPosts.find(p => p.id == order.postId);
-  const status = order.status || 'new';
+  const status = allQueue.find(o => o.id == orderId) ? 'queue' : (order.status || 'in-progress');
+  const isRepair = order.postId === 0;
   
   document.getElementById('modalTitle').textContent = `Наряд #${order.id}`;
   document.getElementById('modalBody').innerHTML = `
@@ -466,8 +565,8 @@ function showDetails(orderId) {
       <div class="detail-value">${order.services}</div>
     </div>
     <div class="detail-row">
-      <div class="detail-label">Подъёмник</div>
-      <div class="detail-value">${post?.name || '—'}</div>
+      <div class="detail-label">Место работы</div>
+      <div class="detail-value">${isRepair ? '🔧 Ремонтная зона (без подъёмника)' : (post?.name || '—')}</div>
     </div>
     <div class="detail-row">
       <div class="detail-label">Мастер</div>
@@ -492,8 +591,8 @@ function showDetails(orderId) {
   `;
   
   let actions = `<button class="btn ghost" onclick="closeModal()">Закрыть</button>`;
-  if (status === 'new') {
-    actions += `<button class="btn ok" onclick="takeOrder(${order.id}); closeModal()">🤝 Взять заказ</button>`;
+  if (status === 'queue') {
+    actions += `<button class="btn ok" onclick="openPostSelect(${order.id}); closeModal()">🤝 Взять заказ</button>`;
   } else if (status === 'in-progress') {
     actions += `<button class="btn ok" onclick="completeWork(${order.id}); closeModal()">✓ Завершить</button>`;
   }
@@ -506,23 +605,120 @@ function closeModal() {
   document.getElementById('detailModal').classList.remove('open');
 }
 
-// ✅ Новая функция: мастер берёт заказ
-function takeOrder(orderId) {
-  const order = allOrders.find(o => o.id == orderId);
+// ===== Выбор подъёмника =====
+function openPostSelect(orderId) {
+  const order = allQueue.find(o => o.id == orderId);
   if (!order) return;
   
-  if (!confirm(`Взять заказ #${order.id}?\n${order.car}\n${order.services}`)) return;
+  pickingOrderId = orderId;
+  selectedPostId = null;
+  isRepairZone = false;
   
-  updateOrder(orderId, {
-    startedAt: Date.now(),
-    status: 'in-progress',
-    master: currentMasterName,
-    masterId: String(currentMaster)
-  });
+  document.getElementById('pickCar').textContent = order.car;
+  document.getElementById('pickServices').textContent = order.services;
   
-  if (order.postId) {
-    updatePost(order.postId, { status: 'busy' });
+  // Собираем свободные подъёмники + опцию "без подъёмника"
+  const freePosts = allPosts.filter(p => p.status === 'free');
+  const busyPosts = allPosts.filter(p => p.status !== 'free');
+  
+  let html = '';
+  
+  // Опция "Ремонтная зона" (без подъёмника) - всегда доступна
+  html += `
+    <div class="post-option repair-zone" onclick="selectPostOption(0, true)">
+      <div>
+        <div class="post-option-name">🔧 Ремонтная зона</div>
+        <div class="post-option-status" style="color:var(--cyan);">Без подъёмника · несколько мастеров</div>
+      </div>
+    </div>
+  `;
+  
+  // Свободные подъёмники
+  if (freePosts.length > 0) {
+    html += '<div style="margin:12px 0 8px; font-size:12px; color:var(--muted); text-transform:uppercase;">Свободные подъёмники</div>';
+    freePosts.forEach(p => {
+      html += `
+        <div class="post-option" onclick="selectPostOption(${p.id}, false)">
+          <div>
+            <div class="post-option-name">${p.name}</div>
+            <div class="post-option-status free">● Свободен</div>
+          </div>
+        </div>
+      `;
+    });
+  } else {
+    html += '<div style="margin:12px 0 8px; font-size:12px; color:var(--warn);">⚠ Нет свободных подъёмников</div>';
   }
+  
+  // Занятые подъёмники (только для информации)
+  if (busyPosts.length > 0) {
+    html += '<div style="margin:12px 0 8px; font-size:12px; color:var(--muted); text-transform:uppercase;">Занятые</div>';
+    busyPosts.forEach(p => {
+      html += `
+        <div class="post-option" style="opacity:0.5; cursor:not-allowed;" onclick="return false;">
+          <div>
+            <div class="post-option-name">${p.name}</div>
+            <div class="post-option-status" style="color:var(--warn);">● Занят</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  
+  document.getElementById('postOptions').innerHTML = html;
+  document.getElementById('confirmPickBtn').disabled = true;
+  document.getElementById('postSelectModal').classList.add('open');
+}
+
+function selectPostOption(postId, repair) {
+  selectedPostId = postId;
+  isRepairZone = repair;
+  
+  // Визуальное выделение
+  document.querySelectorAll('.post-option').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  
+  document.getElementById('confirmPickBtn').disabled = false;
+}
+
+function closePostSelect() {
+  document.getElementById('postSelectModal').classList.remove('open');
+  pickingOrderId = null;
+  selectedPostId = null;
+  isRepairZone = false;
+}
+
+function confirmPick() {
+  if (!pickingOrderId || selectedPostId === null) return;
+  
+  const order = allQueue.find(o => o.id == pickingOrderId);
+  if (!order) { closePostSelect(); return; }
+  
+  const master = allMasters.find(m => String(m.id) === String(currentMaster));
+  const masterName = master ? master.name : currentMasterName;
+  
+  // Создаём заказ в active orders
+  const newOrder = {
+    ...order,
+    postId: isRepairZone ? 0 : selectedPostId,
+    master: masterName,
+    masterId: String(currentMaster),
+    startedAt: Date.now(),
+    status: 'in-progress'
+  };
+  
+  // Удаляем из очереди
+  removeFromQueue(pickingOrderId);
+  
+  // Добавляем в активные заказы
+  addOrder(newOrder);
+  
+  // Если выбран подъёмник — занимаем его
+  if (!isRepairZone && selectedPostId) {
+    updatePost(selectedPostId, { status: 'busy' });
+  }
+  
+  closePostSelect();
 }
 
 function completeWork(orderId) {
@@ -540,13 +736,14 @@ function completeWork(orderId) {
   };
   
   addToHistory(completedOrder);
-  removeOrder(orderId);
+  db.ref(`orders/${orderId}`).remove();
   
-  if (order.postId) {
+  // Освобождаем подъёмник если он был
+  if (order.postId && order.postId !== 0) {
     updatePost(order.postId, { status: 'free' });
   }
   
-  // ✅ Обновляем статистику с ID мастера вместо имени
+  // Обновляем статистику
   db.ref('stats').once('value', (snapshot) => {
     const data = snapshot.val() || { revenue: 0, servedToday: 0, dailyStats: {} };
     const today = new Date().toISOString().split('T')[0];
@@ -560,7 +757,6 @@ function completeWork(orderId) {
     data.dailyStats[today].revenue += order.price || 0;
     data.dailyStats[today].orders += 1;
     
-    // ✅ Используем ID мастера как ключ (безопасно для Firebase)
     const masterId = order.masterId || String(currentMaster) || 'unassigned';
     if (!data.dailyStats[today].masters[masterId]) data.dailyStats[today].masters[masterId] = 0;
     data.dailyStats[today].masters[masterId] += order.price || 0;
