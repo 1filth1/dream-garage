@@ -213,6 +213,7 @@
     border-left: 3px solid var(--accent);
   }
   .item.repair-zone { border-left-color: var(--cyan); }
+  .item.queue-item { border-left-color: var(--info); }
   .item-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
   .item-main { font-weight: 600; margin-bottom: 4px; }
   .item-sub { font-size: 12px; color: var(--muted); }
@@ -559,13 +560,11 @@
     <div class="form-group"><label>Телефон клиента</label><input id="f-phone" placeholder="+7 ..."></div>
     <div class="form-group"><label>Автомобиль</label><input id="f-car" placeholder="Toyota Camry, А123БВ 77"></div>
     <div class="form-group"><label>Услуги</label><textarea id="f-services" rows="2" placeholder="Замена масла, фильтров"></textarea></div>
-    <div class="form-group"><label>Мастер</label><select id="f-master"></select></div>
     <div class="form-group"><label>Стоимость (₽)</label><input id="f-price" type="number" value="0"></div>
-    <div class="form-group"><label>Подъёмник</label><select id="f-post"></select></div>
     <div class="form-group"><label>⏰ Выдать автомобиль к</label><input id="f-deadline" type="datetime-local"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Отмена</button>
-      <button class="btn" onclick="saveOrder()">Сохранить</button>
+      <button class="btn" onclick="saveOrder()">Добавить в очередь</button>
     </div>
   </div>
 </div>
@@ -578,7 +577,6 @@
     <div class="form-group"><label>Телефон клиента</label><input id="r-phone" placeholder="+7 ..."></div>
     <div class="form-group"><label>Автомобиль</label><input id="r-car" placeholder="Toyota Camry, А123БВ 77"></div>
     <div class="form-group"><label>Услуги</label><textarea id="r-services" rows="2" placeholder="Диагностика, регулировка"></textarea></div>
-    <div class="form-group"><label>Мастер</label><select id="r-master"></select></div>
     <div class="form-group"><label>Стоимость (₽)</label><input id="r-price" type="number" value="0"></div>
     <div class="form-group"><label>⏰ Выдать автомобиль к</label><input id="r-deadline" type="datetime-local"></div>
     <div class="modal-actions">
@@ -649,6 +647,10 @@ function initFirebaseListeners() {
     state.bookings = snapshot.val() ? Object.values(snapshot.val()) : [];
     render();
   });
+  db.ref('queue').on('value', (snapshot) => {
+    state.queue = snapshot.val() ? Object.values(snapshot.val()) : [];
+    render();
+  });
   db.ref('history').on('value', (snapshot) => {
     state.history = snapshot.val() ? Object.values(snapshot.val()) : [];
     render();
@@ -674,6 +676,8 @@ function initPosts() {
 function addOrder(order) { db.ref(`orders/${order.id}`).set(order); }
 function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(updates); }
 function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
+function addToQueue(order) { db.ref(`queue/${order.id}`).set(order); }
+function removeFromQueue(orderId) { db.ref(`queue/${orderId}`).remove(); }
 function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
 function addBooking(booking) { db.ref(`bookings/${booking.id}`).set(booking); }
 function updateBooking(bookingId, updates) { db.ref(`bookings/${bookingId}`).update(updates); }
@@ -908,7 +912,6 @@ function renderPosts() {
   }).join('');
 }
 
-// ===== Ремонтная зона (без подъёмника) =====
 function renderRepairZone() {
   const el = document.getElementById('repairZone');
   const repairOrders = state.orders.filter(o => o.postId === 0 || o.postId === null);
@@ -998,7 +1001,26 @@ function renderQueue() {
   document.getElementById('queue-count').textContent = state.queue.length;
   const el = document.getElementById('queue');
   if (!state.queue.length) { el.innerHTML = '<div class="empty">Очередь пуста</div>'; return; }
-  el.innerHTML = state.queue.map((q, i) => `<div class="item"><div class="item-top"><span>#${i+1}</span><span>${q.createdAt}</span></div><div class="item-main">${q.car}</div><div class="item-sub">${q.client} · ${q.services}</div><div style="margin-top:8px;"><button class="btn small" onclick="startFromQueue(${q.id})">Принять</button></div></div>`).join('');
+  el.innerHTML = state.queue.map((q, i) => {
+    let deadlineHtml = '';
+    if (q.deadline) {
+      const cls = getDeadlineClass(q.deadline);
+      const prefix = cls === 'err' ? '⚠ ' : '⏱ ';
+      deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(q.deadline)}</span>`;
+    }
+    return `
+      <div class="item queue-item">
+        <div class="item-top">
+          <span>#${i+1} ${deadlineHtml}</span>
+          <span>${q.createdAt}</span>
+        </div>
+        <div class="item-main">${q.car}</div>
+        <div class="item-sub">${q.client} ${q.phone ? '· ' + q.phone : ''} · ${q.services}</div>
+        <div class="item-sub">${q.price} ₽</div>
+        ${q.deadline ? `<div class="item-sub">Выдать к: ${new Date(q.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 function render() {
@@ -1010,7 +1032,6 @@ function render() {
   renderQueue();
 }
 
-// ===== Мастера =====
 let editingMasterId = null;
 function openMastersModal() { editingMasterId = null; renderMastersList(); ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = ''); document.getElementById('mastersModal').classList.add('open'); }
 function closeMastersModal() { document.getElementById('mastersModal').classList.remove('open'); }
@@ -1030,7 +1051,6 @@ function saveMaster() {
 }
 function deleteMaster(id) { if (!confirm('Удалить мастера?')) return; removeMaster(id); }
 
-// ===== Бронирования =====
 function openBookingModal() {
   document.getElementById('b-post').innerHTML = state.posts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
   const now = new Date();
@@ -1058,24 +1078,18 @@ function saveBooking() {
   closeBookingModal();
 }
 
-// ✅ Завершить без оплаты - вычитаем из выручки и удаляем
 function completeBookingNoPay(id) {
   if (!confirm('Завершить бронирование без оплаты? Деньги будут возвращены.')) return;
   const booking = state.bookings.find(b => b.id == id);
-  if (booking) {
-    state.bookingRevenue -= booking.price;
-    updateStats();
-  }
+  if (booking) { state.bookingRevenue -= booking.price; updateStats(); }
   removeBooking(id);
 }
 
-// ✅ Завершить досрочно с оплатой - просто удаляем (деньги уже учтены)
 function completeBookingWithPay(id) {
   if (!confirm('Завершить бронирование досрочно? Оплата уже учтена.')) return;
   removeBooking(id);
 }
 
-// ✅ Продлить бронирование
 let extendingBookingId = null;
 function openExtendModal(id) {
   const booking = state.bookings.find(b => b.id == id);
@@ -1094,7 +1108,6 @@ function saveExtendBooking() {
   const booking = state.bookings.find(b => b.id == extendingBookingId);
   if (!booking) return;
   if (newEnd <= booking.start) { alert('Новое время окончания должно быть позже начала'); return; }
-  
   updateBooking(extendingBookingId, { end: newEnd, price: booking.price + additionalPrice });
   state.bookingRevenue += additionalPrice;
   updateStats();
@@ -1108,57 +1121,35 @@ function cancelBooking(id) {
   removeBooking(id);
 }
 
-// ===== Заказ-наряды =====
-let editingOrder = null;
+// ✅ Заказы теперь попадают в очередь
 function openOrderModal(order = null) {
-  editingOrder = order;
-  document.getElementById('modalTitle').textContent = order ? 'Редактировать заказ' : 'Новый заказ-наряд';
-  document.getElementById('f-master').innerHTML = '<option value="">— не назначен —</option>' + state.masters.map(m => `<option value="${m.name}">${m.name}${m.spec ? ' (' + m.spec + ')' : ''}</option>`).join('');
-  const freePosts = state.posts.filter(p => p.status === 'free' || (order && p.id == order.postId));
-  document.getElementById('f-post').innerHTML = freePosts.map(p => `<option value="${p.id}">${p.name}</option>`).join('') || '<option value="">Нет свободных подъёмников</option>';
-  if (order) {
-    document.getElementById('f-client').value = order.client;
-    document.getElementById('f-phone').value = order.phone || '';
-    document.getElementById('f-car').value = order.car;
-    document.getElementById('f-services').value = order.services;
-    document.getElementById('f-master').value = order.master || '';
-    document.getElementById('f-price').value = order.price;
-    document.getElementById('f-post').value = order.postId;
-    document.getElementById('f-deadline').value = order.deadline ? toLocalDatetime(order.deadline) : '';
-  } else {
-    ['f-client','f-phone','f-car','f-services','f-deadline'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f-master').value = '';
-    document.getElementById('f-price').value = 0;
-  }
+  document.getElementById('modalTitle').textContent = 'Новый заказ-наряд';
+  ['f-client','f-phone','f-car','f-services','f-deadline'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-price').value = 0;
   document.getElementById('orderModal').classList.add('open');
 }
 function toLocalDatetime(ts) { const d = new Date(ts); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 function closeModal() { document.getElementById('orderModal').classList.remove('open'); }
+
+// ✅ Заказ добавляется в очередь без мастера и подъёмника
 function saveOrder() {
-  const postId = parseInt(document.getElementById('f-post').value);
-  if (!postId) { alert('Выберите подъёмник'); return; }
   const deadlineVal = document.getElementById('f-deadline').value;
-  const masterName = document.getElementById('f-master').value;
-  const master = state.masters.find(m => m.name === masterName);
   const data = {
-    id: editingOrder?.id || Date.now(),
+    id: Date.now(),
     client: document.getElementById('f-client').value.trim(),
     phone: document.getElementById('f-phone').value.trim(),
     car: document.getElementById('f-car').value.trim(),
     services: document.getElementById('f-services').value.trim(),
-    master: masterName || null,
-    masterId: master ? String(master.id) : null,
     price: parseInt(document.getElementById('f-price').value) || 0,
-    postId,
-    startedAt: editingOrder?.startedAt || null,
     deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
-    status: editingOrder?.status || 'new'
+    createdAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
   };
   if (!data.client || !data.car) { alert('Заполните клиента и авто'); return; }
   if (data.deadline && data.deadline <= Date.now()) { if (!confirm('Указанное время уже прошло. Продолжить?')) return; }
-  if (editingOrder) updateOrder(editingOrder.id, data); else addOrder(data);
+  addToQueue(data);
   closeModal();
 }
+
 function completeOrder(id) {
   const o = state.orders.find(x => x.id == id);
   if (!o) return;
@@ -1170,21 +1161,14 @@ function completeOrder(id) {
   if (o.postId && o.postId !== 0) updatePost(o.postId, { status: 'free' });
   updateStats();
 }
+
 function cancelOrder(id) {
   if (!confirm('Отменить заказ?')) return;
   const o = state.orders.find(x => x.id == id);
   removeOrder(id);
   if (o.postId && o.postId !== 0) updatePost(o.postId, { status: 'free' });
 }
-function startFromQueue(id) {
-  const q = state.queue.find(x => x.id === id);
-  if (!q) return;
-  const freePost = state.posts.find(p => p.status === 'free');
-  if (!freePost) { alert('Нет свободных подъёмников'); return; }
-  openOrderModal({ client: q.client, car: q.car, services: q.services, master: '', price: 0, postId: freePost.id });
-  state.queue = state.queue.filter(x => x.id !== id);
-  render();
-}
+
 function cycleStatus(postId) {
   const p = state.posts.find(x => x.id == postId);
   const order = state.orders.find(o => o.postId == postId);
@@ -1193,18 +1177,13 @@ function cycleStatus(postId) {
   updatePost(postId, { status: cycle[(cycle.indexOf(p.status) + 1) % cycle.length] });
 }
 
-// ===== Ремонт без подъёмника =====
 function openRepairModal() {
-  document.getElementById('r-master').innerHTML = '<option value="">— не назначен —</option>' + state.masters.map(m => `<option value="${m.name}">${m.name}${m.spec ? ' (' + m.spec + ')' : ''}</option>`).join('');
   ['r-client','r-phone','r-car','r-services','r-deadline'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('r-master').value = '';
   document.getElementById('r-price').value = 0;
   document.getElementById('repairModal').classList.add('open');
 }
 function closeRepairModal() { document.getElementById('repairModal').classList.remove('open'); }
 function saveRepair() {
-  const masterName = document.getElementById('r-master').value;
-  const master = state.masters.find(m => m.name === masterName);
   const deadlineVal = document.getElementById('r-deadline').value;
   const data = {
     id: Date.now(),
@@ -1212,13 +1191,12 @@ function saveRepair() {
     phone: document.getElementById('r-phone').value.trim(),
     car: document.getElementById('r-car').value.trim(),
     services: document.getElementById('r-services').value.trim(),
-    master: masterName || null,
-    masterId: master ? String(master.id) : null,
     price: parseInt(document.getElementById('r-price').value) || 0,
-    postId: 0,  // ✅ Специальный ID для ремонтной зоны
+    postId: 0,
     startedAt: Date.now(),
     deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
-    status: 'in-progress'
+    status: 'in-progress',
+    createdAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
   };
   if (!data.client || !data.car) { alert('Заполните клиента и авто'); return; }
   if (data.deadline && data.deadline <= Date.now()) { if (!confirm('Указанное время уже прошло. Продолжить?')) return; }
