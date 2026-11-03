@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a2028">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Dream Garage — Мастер</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2028;
+    --panel-2: #232b36;
+    --border: #2d3642;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #3b82f6;
+    --ok: #10b981;
+    --warn: #f59e0b;
+    --info: #6366f1;
+    --err: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 70px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  header {
+    background: var(--panel);
+    padding: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  h1 span { color: var(--accent); font-style: italic; }
+  .master-select {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .sync-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: var(--panel-2);
+    margin-left: 8px;
+  }
+  .sync-status.connected { color: var(--ok); }
+  .sync-status.disconnected { color: var(--err); }
+  
+  .tabs { display: flex; gap: 8px; }
+  .tab {
+    flex: 1;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .tab .count {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+  
+  .content { padding: 16px; }
+  
+  .order-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--border);
+    cursor: pointer;
+  }
+  .order-card.new { border-left-color: var(--info); }
+  .order-card.in-progress { border-left-color: var(--warn); }
+  .order-card.completed { border-left-color: var(--ok); }
+  
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 12px;
+  }
+  .order-id { font-size: 12px; color: var(--muted); }
+  .order-time { font-size: 12px; color: var(--muted); }
+  
+  .order-main { margin-bottom: 12px; }
+  .order-car { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .order-client { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+  .order-services { font-size: 13px; color: var(--text); line-height: 1.4; }
+  
+  .order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .order-price { font-size: 16px; font-weight: 700; color: var(--accent); }
+  .order-actions { display: flex; gap: 8px; }
+  
+  .deadline-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    margin-left: 6px;
+  }
+  .deadline-badge.ok { background: rgba(16,185,129,0.2); color: var(--ok); }
+  .deadline-badge.warn { background: rgba(245,158,11,0.2); color: var(--warn); }
+  .deadline-badge.err { background: rgba(239,68,68,0.2); color: var(--err); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.6; } }
+  
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn.small { padding: 8px 12px; font-size: 13px; }
+  .btn.ok { background: var(--ok); }
+  .btn.warn { background: var(--warn); }
+  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge.new { background: rgba(99,102,241,0.2); color: var(--info); }
+  .badge.in-progress { background: rgba(245,158,11,0.2); color: var(--warn); }
+  .badge.completed { background: rgba(16,185,129,0.2); color: var(--ok); }
+  
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal.open { display: flex; }
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-content h3 { margin-bottom: 16px; font-size: 18px; }
+  .detail-row { margin-bottom: 12px; }
+  .detail-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .detail-value { font-size: 14px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-actions .btn { flex: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>🏎️ <span>Dream</span> Garage</h1>
+    <div>
+      <select class="master-select" id="masterSelect" onchange="changeMaster()">
+        <option value="">Мастер...</option>
+      </select>
+      <span class="sync-status" id="syncStatus">⚪</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('new', this)">
+      Новые <span class="count" id="newCount">0</span>
+    </div>
+    <div class="tab" onclick="switchTab('in-progress', this)">
+      В работе <span class="count" id="progressCount">0</span>
+    </div>
+    <div class="tab" onclick="switchTab('completed', this)">
+      Завершённые <span class="count" id="completedCount">0</span>
+    </div>
+  </div>
+</header>
+
+<div class="content" id="content"></div>
+
+<div class="modal" id="detailModal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Детали наряда</h3>
+    <div id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+// ===== ВАЖНО: Вставьте сюда свою конфигурацию Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyALbJZS2dfNqtC47glcDp_DmEVCsTp2_Mw",
+  authDomain: "dream-garage-4bff9.firebaseapp.com",
+  databaseURL: "https://dream-garage-4bff9-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "dream-garage-4bff9",
+  storageBucket: "dream-garage-4bff9.firebasestorage.app",
+  messagingSenderId: "1043595691448",
+  appId: "1:1043595691448:web:7bd610400cf417010e7b4d"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const MASTER_KEY = 'dg_master_id';
+let currentMaster = localStorage.getItem(MASTER_KEY) || '';
+let currentMasterName = localStorage.getItem('dg_master_name') || '';
+let currentTab = 'new';
+let allOrders = [];
+let allHistory = [];
+let allPosts = [];
+let allMasters = [];
+
+// ===== Инициализация =====
+function init() {
+  const connectedRef = db.ref('.info/connected');
+  connectedRef.on('value', (snap) => {
+    const statusEl = document.getElementById('syncStatus');
+    if (snap.val() === true) {
+      statusEl.textContent = '🟢';
+      statusEl.className = 'sync-status connected';
+    } else {
+      statusEl.textContent = '🔴';
+      statusEl.className = 'sync-status disconnected';
+    }
+  });
+
+  db.ref('masters').on('value', (snapshot) => {
+    const data = snapshot.val();
+    allMasters = data ? Object.values(data) : [];
+    const select = document.getElementById('masterSelect');
+    select.innerHTML = '<option value="">Мастер...</option>' +
+      allMasters.map(m => `<option value="${m.id}" ${String(m.id) === String(currentMaster) ? 'selected' : ''}>${m.name}</option>`).join('');
+    render();
+  });
+
+  db.ref('orders').on('value', (snapshot) => {
+    const data = snapshot.val();
+    allOrders = data ? Object.values(data) : [];
+    render();
+  });
+
+  db.ref('history').on('value', (snapshot) => {
+    const data = snapshot.val();
+    allHistory = data ? Object.values(data) : [];
+    render();
+  });
+
+  db.ref('posts').on('value', (snapshot) => {
+    const data = snapshot.val();
+    allPosts = data ? Object.values(data) : [];
+  });
+
+  if (!currentMaster) {
+    alert('Выберите мастера для начала работы');
+  }
+  
+  render();
+  setInterval(render, 30000);
+}
+
+function changeMaster() {
+  const select = document.getElementById('masterSelect');
+  currentMaster = select.value;
+  const master = allMasters.find(m => String(m.id) === String(currentMaster));
+  currentMasterName = master ? master.name : '';
+  localStorage.setItem(MASTER_KEY, currentMaster);
+  localStorage.setItem('dg_master_name', currentMasterName);
+  render();
+}
+
+// ===== Firebase операции =====
+function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(updates); }
+function updatePost(postId, updates) { db.ref(`posts/${postId}`).update(updates); }
+function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
+function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
+
+// ===== Рендер =====
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function formatTime(ms) {
+  const totalSec = Math.floor(Math.abs(ms) / 1000);
+  const hours = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  if (hours > 0) return `${hours}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+
+function formatCountdown(deadlineTs) {
+  const diff = deadlineTs - Date.now();
+  const abs = Math.abs(diff);
+  const hours = Math.floor(abs / 3600000);
+  const mins = Math.floor((abs % 3600000) / 60000);
+  if (diff < 0) {
+    if (hours > 0) return `−${hours}ч ${mins}м`;
+    return `−${mins}м`;
+  }
+  if (hours > 0) return `${hours}ч ${mins}м`;
+  const secs = Math.floor((abs % 60000) / 1000);
+  return `${mins}м ${String(secs).padStart(2,'0')}с`;
+}
+
+function getDeadlineClass(deadlineTs) {
+  const diff = deadlineTs - Date.now();
+  if (diff < 0) return 'err';
+  if (diff < 30 * 60 * 1000) return 'warn';
+  return 'ok';
+}
+
+function getStatusLabel(status) {
+  const labels = { 'new': 'Новый', 'in-progress': 'В работе', 'completed': 'Завершён' };
+  return labels[status] || status;
+}
+
+function render() {
+  if (!currentMaster) {
+    document.getElementById('content').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">👤</div>
+        <div>Выберите мастера вверху страницы</div>
+      </div>
+    `;
+    return;
+  }
+  
+  const orders = allOrders.filter(o => o.master === currentMasterName || !o.master);
+  const history = allHistory.filter(h => h.master === currentMasterName || !h.master);
+  
+  const newOrders = orders.filter(o => !o.startedAt || o.status === 'new');
+  const inProgress = orders.filter(o => o.status === 'in-progress');
+  const completed = history;
+  
+  document.getElementById('newCount').textContent = newOrders.length;
+  document.getElementById('progressCount').textContent = inProgress.length;
+  document.getElementById('completedCount').textContent = completed.length;
+  
+  const content = document.getElementById('content');
+  let items = [];
+  
+  if (currentTab === 'new') items = newOrders;
+  else if (currentTab === 'in-progress') items = inProgress;
+  else if (currentTab === 'completed') items = completed;
+  
+  if (!items.length) {
+    content.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📋</div>
+        <div>Нет нарядов</div>
+      </div>
+    `;
+    return;
+  }
+  
+  content.innerHTML = items.map(o => {
+    const status = o.status || (o.startedAt ? 'in-progress' : 'new');
+    const time = o.startedAt ? formatTime(Date.now() - o.startedAt) : '—';
+    let deadlineHtml = '';
+    if (o.deadline && status !== 'completed') {
+      const cls = getDeadlineClass(o.deadline);
+      const prefix = cls === 'err' ? '⚠ ' : '⏱ ';
+      deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
+    }
+    
+    return `
+      <div class="order-card ${status}" onclick="showDetails(${o.id})">
+        <div class="order-header">
+          <div>
+            <div class="order-id">#${o.id} ${deadlineHtml}</div>
+            <span class="badge ${status}">${getStatusLabel(status)}</span>
+          </div>
+          <div class="order-time">${time}</div>
+        </div>
+        <div class="order-main">
+          <div class="order-car">${o.car}</div>
+          <div class="order-client">${o.client} ${o.phone ? '· ' + o.phone : ''}</div>
+          <div class="order-services">${o.services}</div>
+        </div>
+        <div class="order-footer">
+          <div class="order-price">${o.price} ₽</div>
+          <div class="order-actions">
+            ${status === 'new' ? `<button class="btn small ok" onclick="event.stopPropagation(); startWork(${o.id})">▶ Начать</button>` : ''}
+            ${status === 'in-progress' ? `<button class="btn small ok" onclick="event.stopPropagation(); completeWork(${o.id})">✓ Завершить</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showDetails(orderId) {
+  const order = allOrders.find(o => o.id == orderId) || allHistory.find(h => h.id == orderId);
+  if (!order) return;
+  
+  const post = allPosts.find(p => p.id == order.postId);
+  const status = order.status || (order.startedAt ? 'in-progress' : 'new');
+  
+  document.getElementById('modalTitle').textContent = `Наряд #${order.id}`;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="detail-row">
+      <div class="detail-label">Статус</div>
+      <div class="detail-value"><span class="badge ${status}">${getStatusLabel(status)}</span></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Клиент</div>
+      <div class="detail-value">${order.client} ${order.phone ? '· ' + order.phone : ''}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Автомобиль</div>
+      <div class="detail-value">${order.car}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Услуги</div>
+      <div class="detail-value">${order.services}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Подъёмник</div>
+      <div class="detail-value">${post?.name || '—'}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Мастер</div>
+      <div class="detail-value">${order.master || 'Не назначен'}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Стоимость</div>
+      <div class="detail-value" style="color: var(--accent); font-weight: 700;">${order.price} ₽</div>
+    </div>
+    ${order.deadline ? `
+      <div class="detail-row">
+        <div class="detail-label">Выдать к</div>
+        <div class="detail-value">${new Date(order.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    ` : ''}
+    ${order.startedAt ? `
+      <div class="detail-row">
+        <div class="detail-label">Время в работе</div>
+        <div class="detail-value">${formatTime(Date.now() - order.startedAt)}</div>
+      </div>
+    ` : ''}
+  `;
+  
+  let actions = `<button class="btn ghost" onclick="closeModal()">Закрыть</button>`;
+  if (status === 'new') {
+    actions += `<button class="btn ok" onclick="startWork(${order.id}); closeModal()">▶ Начать</button>`;
+  } else if (status === 'in-progress') {
+    actions += `<button class="btn ok" onclick="completeWork(${order.id}); closeModal()">✓ Завершить</button>`;
+  }
+  
+  document.getElementById('modalActions').innerHTML = actions;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('detailModal').classList.remove('open');
+}
+
+function startWork(orderId) {
+  const order = allOrders.find(o => o.id == orderId);
+  if (!order) return;
+  
+  updateOrder(orderId, {
+    startedAt: Date.now(),
+    status: 'in-progress',
+    master: currentMasterName
+  });
+  
+  if (order.postId) {
+    updatePost(order.postId, { status: 'busy' });
+  }
+}
+
+function completeWork(orderId) {
+  if (!confirm('Завершить работу?')) return;
+  
+  const order = allOrders.find(o => o.id == orderId);
+  if (!order) return;
+  
+  const completedOrder = {
+    ...order,
+    status: 'completed',
+    master: order.master || currentMasterName,
+    finishedAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
+  };
+  
+  addToHistory(completedOrder);
+  removeOrder(orderId);
+  
+  if (order.postId) {
+    updatePost(order.postId, { status: 'free' });
+  }
+  
+  // Обновляем статистику
+  db.ref('stats').once('value', (snapshot) => {
+    const data = snapshot.val() || { revenue: 0, servedToday: 0, dailyStats: {} };
+    const today = new Date().toISOString().split('T')[0];
+    
+    data.revenue = (data.revenue || 0) + (order.price || 0);
+    data.servedToday = (data.servedToday || 0) + 1;
+    
+    if (!data.dailyStats) data.dailyStats = {};
+    if (!data.dailyStats[today]) data.dailyStats[today] = { revenue: 0, orders: 0, masters: {} };
+    
+    data.dailyStats[today].revenue += order.price || 0;
+    data.dailyStats[today].orders += 1;
+    
+    const master = order.master || currentMasterName || 'Не назначен';
+    if (!data.dailyStats[today].masters[master]) data.dailyStats[today].masters[master] = 0;
+    data.dailyStats[today].masters[master] += order.price || 0;
+    
+    db.ref('stats').set(data);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

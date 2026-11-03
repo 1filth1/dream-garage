@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Garage — Premium Auto Service</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2028;
+    --panel-2: #232b36;
+    --border: #2d3642;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #3b82f6;
+    --ok: #10b981;
+    --warn: #f59e0b;
+    --info: #6366f1;
+    --err: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: 0.5px; }
+  h1 span { color: var(--accent); font-style: italic; }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .clock { color: var(--muted); font-size: 14px; }
+  .sync-status {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: var(--panel-2);
+  }
+  .sync-status.connected { color: var(--ok); }
+  .sync-status.disconnected { color: var(--err); }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .stat-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+  .stat-value.ok { color: var(--ok); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.accent { color: var(--accent); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .panel h2 {
+    font-size: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .posts-list { display: flex; flex-direction: column; gap: 12px; }
+  .post-row {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 16px;
+    align-items: center;
+    border-left: 4px solid var(--border);
+    transition: all 0.2s;
+  }
+  @media (max-width: 600px) {
+    .post-row { grid-template-columns: 1fr auto; }
+    .post-timer, .post-deadline { grid-column: 1 / -1; }
+  }
+  .post-row.free { border-left-color: var(--ok); }
+  .post-row.busy { border-left-color: var(--warn); }
+  .post-row.waiting { border-left-color: var(--info); }
+
+  .post-main { display: flex; flex-direction: column; gap: 4px; }
+  .post-name { font-weight: 600; font-size: 15px; }
+  .post-info { font-size: 13px; color: var(--muted); }
+  .post-info.active { color: var(--text); }
+
+  .post-timer {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    min-width: 80px;
+    text-align: center;
+  }
+  .post-timer.active { color: var(--warn); }
+  .post-timer.idle { color: var(--muted); font-size: 14px; }
+
+  .post-deadline {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-align: center;
+    min-width: 90px;
+  }
+  .post-deadline.ok { background: rgba(16,185,129,0.15); color: var(--ok); }
+  .post-deadline.warn { background: rgba(245,158,11,0.15); color: var(--warn); }
+  .post-deadline.err { background: rgba(239,68,68,0.2); color: var(--err); }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge.free { background: rgba(16,185,129,0.2); color: var(--ok); }
+  .badge.busy { background: rgba(245,158,11,0.2); color: var(--warn); }
+  .badge.waiting { background: rgba(99,102,241,0.2); color: var(--info); }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn.small { padding: 6px 12px; font-size: 12px; }
+  .btn.danger { background: var(--err); }
+  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+  .list { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+  .item {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 12px;
+    border-left: 3px solid var(--accent);
+  }
+  .item-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
+  .item-main { font-weight: 600; margin-bottom: 4px; }
+  .item-sub { font-size: 12px; color: var(--muted); }
+
+  .deadline-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    margin-left: 6px;
+  }
+  .deadline-badge.ok { background: rgba(16,185,129,0.2); color: var(--ok); }
+  .deadline-badge.warn { background: rgba(245,158,11,0.2); color: var(--warn); }
+  .deadline-badge.err { background: rgba(239,68,68,0.2); color: var(--err); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.6; } }
+
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal.open { display: flex; }
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-content h3 { margin-bottom: 16px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  .empty { color: var(--muted); text-align: center; padding: 20px; font-size: 13px; }
+
+  .masters-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .master-item {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .master-info { flex: 1; }
+  .master-name { font-weight: 600; margin-bottom: 2px; }
+  .master-phone { font-size: 12px; color: var(--muted); }
+  .master-actions { display: flex; gap: 6px; }
+
+  .reports-section { margin-top: 24px; }
+  .reports-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .report-tab {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .report-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .chart-container {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    height: 300px;
+  }
+  .chart-title {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏎️ <span>Dream</span> Garage</h1>
+  <div class="header-right">
+    <span class="sync-status" id="syncStatus">⚪ Подключение...</span>
+    <button class="btn ghost" onclick="openMastersModal()">👥 Мастера</button>
+    <div class="clock" id="clock"></div>
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<div class="grid">
+  <div>
+    <div class="panel">
+      <h2>Подъёмники</h2>
+      <div class="posts-list" id="posts"></div>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <h2>Активные заказ-наряды
+        <button class="btn small" onclick="openOrderModal()">+ Новый заказ</button>
+      </h2>
+      <div class="list" id="orders"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Очередь <span class="badge waiting" id="queue-count">0</span></h2>
+      <div class="list" id="queue"></div>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <h2>Последние работы</h2>
+      <div class="list" id="history"></div>
+    </div>
+  </div>
+</div>
+
+<div class="reports-section">
+  <div class="panel">
+    <h2>📊 Отчёты и статистика</h2>
+    <div class="reports-tabs">
+      <div class="report-tab active" onclick="switchReportTab('daily')">По дням</div>
+      <div class="report-tab" onclick="switchReportTab('weekly')">По неделям</div>
+      <div class="report-tab" onclick="switchReportTab('masters')">По мастерам</div>
+    </div>
+    <div id="reportContent">
+      <div class="chart-container">
+        <div class="chart-title">Загрузка по дням (последние 7 дней)</div>
+        <canvas id="dailyLoadChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Выручка по дням (последние 7 дней)</div>
+        <canvas id="dailyRevenueChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка мастеров -->
+<div class="modal" id="mastersModal">
+  <div class="modal-content">
+    <h3>👥 Управление мастерами</h3>
+    <div class="masters-list" id="mastersList"></div>
+    <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+      <div class="form-group">
+        <label>Имя мастера</label>
+        <input id="m-name" placeholder="Петров А.">
+      </div>
+      <div class="form-group">
+        <label>Телефон (опционально)</label>
+        <input id="m-phone" placeholder="+7 999 123-45-67">
+      </div>
+      <div class="form-group">
+        <label>Специализация (опционально)</label>
+        <input id="m-spec" placeholder="Двигатели, ходовая">
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="closeMastersModal()">Закрыть</button>
+        <button class="btn" onclick="saveMaster()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка заказа -->
+<div class="modal" id="orderModal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Новый заказ-наряд</h3>
+    <div class="form-group">
+      <label>Клиент</label>
+      <input id="f-client" placeholder="Иванов И.И.">
+    </div>
+    <div class="form-group">
+      <label>Телефон клиента</label>
+      <input id="f-phone" placeholder="+7 ...">
+    </div>
+    <div class="form-group">
+      <label>Автомобиль</label>
+      <input id="f-car" placeholder="Toyota Camry, А123БВ 77">
+    </div>
+    <div class="form-group">
+      <label>Услуги</label>
+      <textarea id="f-services" rows="2" placeholder="Замена масла, фильтров"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Мастер</label>
+      <select id="f-master"></select>
+    </div>
+    <div class="form-group">
+      <label>Стоимость (₽)</label>
+      <input id="f-price" type="number" value="0">
+    </div>
+    <div class="form-group">
+      <label>Подъёмник</label>
+      <select id="f-post"></select>
+    </div>
+    <div class="form-group">
+      <label>⏰ Выдать автомобиль к (опционально)</label>
+      <input id="f-deadline" type="datetime-local">
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn" onclick="saveOrder()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== ВАЖНО: Вставьте сюда свою конфигурацию Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyALbJZS2dfNqtC47glcDp_DmEVCsTp2_Mw",
+  authDomain: "dream-garage-4bff9.firebaseapp.com",
+  databaseURL: "https://dream-garage-4bff9-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "dream-garage-4bff9",
+  storageBucket: "dream-garage-4bff9.firebasestorage.app",
+  messagingSenderId: "1043595691448",
+  appId: "1:1043595691448:web:7bd610400cf417010e7b4d"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===== Состояние =====
+let state = {
+  posts: [
+    { id: 1, name: 'Подъёмник 1', type: 'standard', status: 'free' },
+    { id: 2, name: 'Подъёмник 2', type: 'standard', status: 'free' },
+    { id: 3, name: 'Подъёмник 3', type: 'standard', status: 'free' },
+    { id: 4, name: 'Сход-Развал', type: 'alignment', status: 'free' },
+  ],
+  masters: [],
+  orders: [],
+  queue: [],
+  history: [],
+  revenue: 0,
+  servedToday: 0,
+  dailyStats: {}
+};
+
+// ===== Firebase слушатели =====
+function initFirebaseListeners() {
+  const connectedRef = db.ref('.info/connected');
+  connectedRef.on('value', (snap) => {
+    const statusEl = document.getElementById('syncStatus');
+    if (snap.val() === true) {
+      statusEl.textContent = '🟢 Синхронизировано';
+      statusEl.className = 'sync-status connected';
+    } else {
+      statusEl.textContent = '🔴 Нет связи';
+      statusEl.className = 'sync-status disconnected';
+    }
+  });
+
+  db.ref('posts').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      state.posts = Object.values(data);
+      render();
+    }
+  });
+
+  db.ref('masters').on('value', (snapshot) => {
+    const data = snapshot.val();
+    state.masters = data ? Object.values(data) : [];
+    render();
+  });
+
+  db.ref('orders').on('value', (snapshot) => {
+    const data = snapshot.val();
+    state.orders = data ? Object.values(data) : [];
+    render();
+  });
+
+  db.ref('history').on('value', (snapshot) => {
+    const data = snapshot.val();
+    state.history = data ? Object.values(data) : [];
+    render();
+  });
+
+  db.ref('stats').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      state.revenue = data.revenue || 0;
+      state.servedToday = data.servedToday || 0;
+      state.dailyStats = data.dailyStats || {};
+      render();
+    }
+  });
+}
+
+// ===== Firebase операции =====
+function updatePost(postId, updates) { db.ref(`posts/${postId}`).update(updates); }
+function initPosts() {
+  db.ref('posts').once('value', (snap) => {
+    if (!snap.exists()) {
+      state.posts.forEach(p => db.ref(`posts/${p.id}`).set(p));
+    }
+  });
+}
+function addOrder(order) { db.ref(`orders/${order.id}`).set(order); }
+function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(updates); }
+function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
+function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
+function updateStats() {
+  db.ref('stats').set({
+    revenue: state.revenue,
+    servedToday: state.servedToday,
+    dailyStats: state.dailyStats
+  });
+}
+function addMaster(master) { db.ref(`masters/${master.id}`).set(master); }
+function updateMaster(masterId, updates) { db.ref(`masters/${masterId}`).update(updates); }
+function removeMaster(masterId) { db.ref(`masters/${masterId}`).remove(); }
+
+// ===== Утилиты =====
+function getTodayKey() { return new Date().toISOString().split('T')[0]; }
+function getDateKey(date) { return date.toISOString().split('T')[0]; }
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+function getWeekKey(date) {
+  const d = new Date(date);
+  const firstDay = new Date(d);
+  firstDay.setDate(d.getDate() - d.getDay() + 1);
+  return getDateKey(firstDay);
+}
+function formatWeek(weekKey) {
+  const d = new Date(weekKey);
+  const end = new Date(d);
+  end.setDate(d.getDate() + 6);
+  return `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`;
+}
+
+function formatTime(ms) {
+  const totalSec = Math.floor(Math.abs(ms) / 1000);
+  const hours = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  if (hours > 0) return `${hours}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+}
+
+function formatCountdown(deadlineTs) {
+  const diff = deadlineTs - Date.now();
+  const abs = Math.abs(diff);
+  const hours = Math.floor(abs / 3600000);
+  const mins = Math.floor((abs % 3600000) / 60000);
+  if (diff < 0) {
+    if (hours > 0) return `−${hours}ч ${mins}м`;
+    return `−${mins}м`;
+  }
+  if (hours > 0) return `${hours}ч ${mins}м`;
+  const secs = Math.floor((abs % 60000) / 1000);
+  return `${mins}м ${String(secs).padStart(2,'0')}с`;
+}
+
+function getDeadlineClass(deadlineTs) {
+  const diff = deadlineTs - Date.now();
+  if (diff < 0) return 'err';
+  if (diff < 30 * 60 * 1000) return 'warn';
+  return 'ok';
+}
+
+function updateDailyStats(order) {
+  const today = getTodayKey();
+  if (!state.dailyStats[today]) {
+    state.dailyStats[today] = { revenue: 0, orders: 0, masters: {} };
+  }
+  state.dailyStats[today].revenue += order.price || 0;
+  state.dailyStats[today].orders += 1;
+  const master = order.master || 'Не назначен';
+  if (!state.dailyStats[today].masters[master]) state.dailyStats[today].masters[master] = 0;
+  state.dailyStats[today].masters[master] += order.price || 0;
+  updateStats();
+}
+
+// ===== Графики =====
+let charts = {};
+function initCharts() {
+  Chart.defaults.color = '#8b949e';
+  Chart.defaults.borderColor = '#2d3642';
+  Chart.defaults.font.family = '-apple-system, "Segoe UI", Roboto, sans-serif';
+}
+function destroyCharts() {
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+}
+
+function renderDailyReports() {
+  destroyCharts();
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    days.push(getDateKey(d));
+  }
+  const labels = days.map(formatDate);
+  const loadData = days.map(day => state.dailyStats[day]?.orders || 0);
+  const revenueData = days.map(day => state.dailyStats[day]?.revenue || 0);
+
+  charts.dailyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Заказов', data: loadData, backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 2, borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+  charts.dailyRevenue = new Chart(document.getElementById('dailyRevenueChart').getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Выручка', data: revenueData, borderColor: 'rgba(16,185,129,1)', backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } } }
+  });
+}
+
+function renderWeeklyReports() {
+  destroyCharts();
+  const weeks = [];
+  for (let i = 3; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i * 7);
+    weeks.push(getWeekKey(d));
+  }
+  const labels = weeks.map(formatWeek);
+  const sumWeek = (weekKey, field) => {
+    let total = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekKey); d.setDate(d.getDate() + i);
+      const s = state.dailyStats[getDateKey(d)];
+      if (s) total += (field === 'revenue' ? s.revenue : s.orders);
+    }
+    return total;
+  };
+  charts.weeklyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: weeks.map(w => sumWeek(w, 'orders')), backgroundColor: 'rgba(99,102,241,0.6)', borderColor: 'rgba(99,102,241,1)', borderWidth: 2, borderRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+  charts.weeklyRevenue = new Chart(document.getElementById('dailyRevenueChart').getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets: [{ data: weeks.map(w => sumWeek(w, 'revenue')), borderColor: 'rgba(245,158,11,1)', backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } } }
+  });
+}
+
+function renderMastersReports() {
+  destroyCharts();
+  const mastersData = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const s = state.dailyStats[getDateKey(d)];
+    if (s) Object.entries(s.masters).forEach(([m, r]) => { mastersData[m] = (mastersData[m] || 0) + r; });
+  }
+  const masters = Object.keys(mastersData);
+  if (!masters.length) {
+    document.getElementById('reportContent').innerHTML = '<div class="empty">Нет данных по мастерам</div>';
+    return;
+  }
+  document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Выручка по мастерам (7 дней)</div><canvas id="mastersChart"></canvas></div>`;
+  const colors = ['rgba(59,130,246,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.8)','rgba(239,68,68,0.8)','rgba(99,102,241,0.8)'];
+  charts.masters = new Chart(document.getElementById('mastersChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: masters, datasets: [{ data: Object.values(mastersData), backgroundColor: colors.slice(0, masters.length), borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right' },
+        tooltip: { callbacks: { label: ctx => {
+          const v = ctx.parsed, t = ctx.dataset.data.reduce((a,b)=>a+b,0);
+          return `${ctx.label}: ${v.toLocaleString('ru-RU')} ₽ (${((v/t)*100).toFixed(1)}%)`;
+        }}}
+      }
+    }
+  });
+}
+
+let currentReportTab = 'daily';
+function switchReportTab(tab) {
+  currentReportTab = tab;
+  document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  if (tab === 'daily') {
+    document.getElementById('reportContent').innerHTML = `
+      <div class="chart-container"><div class="chart-title">Загрузка по дням (7 дней)</div><canvas id="dailyLoadChart"></canvas></div>
+      <div class="chart-container"><div class="chart-title">Выручка по дням (7 дней)</div><canvas id="dailyRevenueChart"></canvas></div>`;
+    renderDailyReports();
+  } else if (tab === 'weekly') {
+    document.getElementById('reportContent').innerHTML = `
+      <div class="chart-container"><div class="chart-title">Загрузка по неделям (4 недели)</div><canvas id="dailyLoadChart"></canvas></div>
+      <div class="chart-container"><div class="chart-title">Выручка по неделям (4 недели)</div><canvas id="dailyRevenueChart"></canvas></div>`;
+    renderWeeklyReports();
+  } else if (tab === 'masters') {
+    renderMastersReports();
+  }
+}
+
+// ===== Рендер =====
+const statusLabels = { free: 'Свободен', busy: 'Занят', waiting: 'Ожидание' };
+
+function renderStats() {
+  const busyCount = state.posts.filter(p => p.status === 'busy').length;
+  const total = state.posts.length;
+  const load = total ? Math.round(busyCount / total * 100) : 0;
+  const urgent = state.orders.filter(o => o.deadline && getDeadlineClass(o.deadline) !== 'ok').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Загрузка</div><div class="stat-value ${load>70?'warn':'ok'}">${load}%</div></div>
+    <div class="stat"><div class="stat-label">Подъёмников занято</div><div class="stat-value accent">${busyCount} / ${total}</div></div>
+    <div class="stat"><div class="stat-label">Обслужено сегодня</div><div class="stat-value ok">${state.servedToday}</div></div>
+    <div class="stat"><div class="stat-label">Выручка за день</div><div class="stat-value accent">${state.revenue.toLocaleString('ru-RU')} ₽</div></div>
+    <div class="stat"><div class="stat-label">Срочных / просрочено</div><div class="stat-value ${urgent>0?'warn':'ok'}">${urgent}</div></div>
+  `;
+}
+
+function renderPosts() {
+  const el = document.getElementById('posts');
+  el.innerHTML = state.posts.map(p => {
+    const o = state.orders.find(x => x.postId === p.id);
+    let info = '', timer = '', deadline = '';
+    if (o) {
+      const elapsed = Date.now() - o.startedAt;
+      info = `<div class="post-info active">${o.car} · ${o.master || '—'}</div>`;
+      timer = `<div class="post-timer active">${formatTime(elapsed)}</div>`;
+      if (o.deadline) {
+        const cls = getDeadlineClass(o.deadline);
+        const label = cls === 'err' ? 'Просрочено' : 'Осталось';
+        deadline = `<div class="post-deadline ${cls}" title="Выдать к ${new Date(o.deadline).toLocaleString('ru-RU')}">${label}: ${formatCountdown(o.deadline)}</div>`;
+      }
+    } else {
+      info = `<div class="post-info">Нет активного заказа</div>`;
+      timer = `<div class="post-timer idle">—</div>`;
+    }
+    return `
+      <div class="post-row ${p.status}" onclick="cycleStatus(${p.id})">
+        <div class="post-main">
+          <div class="post-name">${p.name}</div>
+          ${info}
+        </div>
+        ${timer}
+        ${deadline}
+        <span class="badge ${p.status}">${statusLabels[p.status]}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderOrders() {
+  const el = document.getElementById('orders');
+  if (!state.orders.length) {
+    el.innerHTML = '<div class="empty">Нет активных заказов</div>';
+    return;
+  }
+  el.innerHTML = state.orders.map(o => {
+    const post = state.posts.find(p => p.id === o.postId);
+    const elapsed = Math.round((Date.now() - o.startedAt) / 60000);
+    let deadlineHtml = '';
+    if (o.deadline) {
+      const cls = getDeadlineClass(o.deadline);
+      const prefix = cls === 'err' ? '⚠ Просрочено: ' : '⏱ Осталось: ';
+      deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
+    }
+    return `
+      <div class="item">
+        <div class="item-top">
+          <span>#${o.id} ${deadlineHtml}</span>
+          <span>${elapsed} мин</span>
+        </div>
+        <div class="item-main">${o.car}</div>
+        <div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div>
+        <div class="item-sub">${post?.name || '—'} · ${o.master || '—'} · ${o.price} ₽</div>
+        ${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+        <div style="margin-top:8px; display:flex; gap:6px;">
+          <button class="btn small" onclick="completeOrder(${o.id})">Завершить</button>
+          <button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">Изменить</button>
+          <button class="btn small danger" onclick="cancelOrder(${o.id})">Отменить</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderQueue() {
+  document.getElementById('queue-count').textContent = state.queue.length;
+  const el = document.getElementById('queue');
+  if (!state.queue.length) { el.innerHTML = '<div class="empty">Очередь пуста</div>'; return; }
+  el.innerHTML = state.queue.map((q, i) => `
+    <div class="item">
+      <div class="item-top"><span>#${i+1}</span><span>${q.createdAt}</span></div>
+      <div class="item-main">${q.car}</div>
+      <div class="item-sub">${q.client} · ${q.services}</div>
+      <div style="margin-top:8px;"><button class="btn small" onclick="startFromQueue(${q.id})">Принять</button></div>
+    </div>
+  `).join('');
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (!state.history.length) { el.innerHTML = '<div class="empty">Пока нет завершённых работ</div>'; return; }
+  el.innerHTML = state.history.slice(0, 10).map(h => `
+    <div class="item">
+      <div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div>
+      <div class="item-main">${h.car}</div>
+      <div class="item-sub">${h.services} · ${h.master || '—'} · ${h.price} ₽</div>
+    </div>
+  `).join('');
+}
+
+function render() {
+  renderStats();
+  renderPosts();
+  renderOrders();
+  renderQueue();
+  renderHistory();
+}
+
+// ===== Управление мастерами =====
+let editingMasterId = null;
+
+function openMastersModal() {
+  editingMasterId = null;
+  renderMastersList();
+  ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mastersModal').classList.add('open');
+}
+function closeMastersModal() { document.getElementById('mastersModal').classList.remove('open'); }
+
+function renderMastersList() {
+  const el = document.getElementById('mastersList');
+  if (!state.masters.length) {
+    el.innerHTML = '<div class="empty">Список мастеров пуст</div>';
+    return;
+  }
+  el.innerHTML = state.masters.map(m => `
+    <div class="master-item">
+      <div class="master-info">
+        <div class="master-name">${m.name}</div>
+        ${m.phone ? `<div class="master-phone">📞 ${m.phone}</div>` : ''}
+        ${m.spec ? `<div class="master-phone">🔧 ${m.spec}</div>` : ''}
+      </div>
+      <div class="master-actions">
+        <button class="btn small ghost" onclick="editMaster(${m.id})">✎</button>
+        <button class="btn small danger" onclick="deleteMaster(${m.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function editMaster(id) {
+  const m = state.masters.find(x => x.id == id);
+  if (!m) return;
+  editingMasterId = id;
+  document.getElementById('m-name').value = m.name;
+  document.getElementById('m-phone').value = m.phone || '';
+  document.getElementById('m-spec').value = m.spec || '';
+}
+
+function saveMaster() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { alert('Введите имя мастера'); return; }
+  const data = {
+    name,
+    phone: document.getElementById('m-phone').value.trim(),
+    spec: document.getElementById('m-spec').value.trim()
+  };
+  if (editingMasterId) {
+    updateMaster(editingMasterId, data);
+  } else {
+    addMaster({ id: Date.now(), ...data });
+  }
+  ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = '');
+  editingMasterId = null;
+}
+
+function deleteMaster(id) {
+  if (!confirm('Удалить мастера?')) return;
+  removeMaster(id);
+}
+
+// ===== Заказ-наряды =====
+let editingOrder = null;
+
+function openOrderModal(order = null) {
+  editingOrder = order;
+  document.getElementById('modalTitle').textContent = order ? 'Редактировать заказ' : 'Новый заказ-наряд';
+
+  const masterSelect = document.getElementById('f-master');
+  masterSelect.innerHTML = '<option value="">— не назначен —</option>' +
+    state.masters.map(m => `<option value="${m.name}">${m.name}${m.spec ? ' (' + m.spec + ')' : ''}</option>`).join('');
+
+  const freePosts = state.posts.filter(p => p.status === 'free' || (order && p.id == order.postId));
+  document.getElementById('f-post').innerHTML = freePosts.map(p =>
+    `<option value="${p.id}">${p.name}</option>`
+  ).join('') || '<option value="">Нет свободных подъёмников</option>';
+
+  if (order) {
+    document.getElementById('f-client').value = order.client;
+    document.getElementById('f-phone').value = order.phone || '';
+    document.getElementById('f-car').value = order.car;
+    document.getElementById('f-services').value = order.services;
+    document.getElementById('f-master').value = order.master || '';
+    document.getElementById('f-price').value = order.price;
+    document.getElementById('f-post').value = order.postId;
+    document.getElementById('f-deadline').value = order.deadline ? toLocalDatetime(order.deadline) : '';
+  } else {
+    ['f-client','f-phone','f-car','f-services','f-deadline'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-master').value = '';
+    document.getElementById('f-price').value = 0;
+  }
+  document.getElementById('orderModal').classList.add('open');
+}
+
+function toLocalDatetime(ts) {
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function closeModal() { document.getElementById('orderModal').classList.remove('open'); }
+
+function saveOrder() {
+  const postId = parseInt(document.getElementById('f-post').value);
+  if (!postId) { alert('Выберите подъёмник'); return; }
+  const deadlineVal = document.getElementById('f-deadline').value;
+  const data = {
+    id: editingOrder?.id || Date.now(),
+    client: document.getElementById('f-client').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    car: document.getElementById('f-car').value.trim(),
+    services: document.getElementById('f-services').value.trim(),
+    master: document.getElementById('f-master').value,
+    price: parseInt(document.getElementById('f-price').value) || 0,
+    postId: postId,
+    startedAt: editingOrder?.startedAt || Date.now(),
+    deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
+    status: editingOrder?.status || 'new'
+  };
+  if (!data.client || !data.car) { alert('Заполните клиента и авто'); return; }
+  if (data.deadline && data.deadline <= Date.now()) {
+    if (!confirm('Указанное время уже прошло. Продолжить?')) return;
+  }
+
+  if (editingOrder) {
+    updateOrder(editingOrder.id, data);
+  } else {
+    addOrder(data);
+    updatePost(postId, { status: 'busy' });
+  }
+  closeModal();
+}
+
+function completeOrder(id) {
+  const o = state.orders.find(x => x.id == id);
+  if (!o) return;
+  updateDailyStats(o);
+  addToHistory({ ...o, finishedAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}) });
+  state.revenue += o.price;
+  state.servedToday++;
+  removeOrder(id);
+  updatePost(o.postId, { status: 'free' });
+  updateStats();
+  if (currentReportTab === 'daily') renderDailyReports();
+  else if (currentReportTab === 'weekly') renderWeeklyReports();
+  else if (currentReportTab === 'masters') renderMastersReports();
+}
+
+function cancelOrder(id) {
+  if (!confirm('Отменить заказ?')) return;
+  const o = state.orders.find(x => x.id == id);
+  removeOrder(id);
+  updatePost(o.postId, { status: 'free' });
+}
+
+function startFromQueue(id) {
+  const q = state.queue.find(x => x.id === id);
+  if (!q) return;
+  const freePost = state.posts.find(p => p.status === 'free');
+  if (!freePost) { alert('Нет свободных подъёмников'); return; }
+  openOrderModal({ client: q.client, car: q.car, services: q.services, master: '', price: 0, postId: freePost.id });
+  state.queue = state.queue.filter(x => x.id !== id);
+  render();
+}
+
+function cycleStatus(postId) {
+  const p = state.posts.find(x => x.id == postId);
+  const order = state.orders.find(o => o.postId == postId);
+  if (order && p.status === 'busy') {
+    if (confirm('На этом подъёмнике активный заказ. Завершить его?')) completeOrder(order.id);
+    return;
+  }
+  const cycle = ['free','busy','waiting'];
+  const newStatus = cycle[(cycle.indexOf(p.status) + 1) % cycle.length];
+  updatePost(postId, { status: newStatus });
+}
+
+// ===== Часы и таймеры =====
+function tickClock() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    d.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'}) +
+    ' · ' + d.toLocaleTimeString('ru-RU');
+}
+
+function updateTimers() {
+  renderStats();
+  renderPosts();
+  renderOrders();
+}
+
+setInterval(tickClock, 1000);
+setInterval(updateTimers, 1000);
+tickClock();
+
+// ===== Старт =====
+initCharts();
+initFirebaseListeners();
+initPosts();
+render();
+renderDailyReports();
+</script>
+</body>
+</html>
