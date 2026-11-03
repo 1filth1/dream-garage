@@ -21,6 +21,7 @@
     --warn: #f59e0b;
     --info: #6366f1;
     --err: #ef4444;
+    --purple: #a855f7;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -81,6 +82,7 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 20px;
+    margin-bottom: 20px;
   }
   .panel h2 {
     font-size: 16px;
@@ -111,6 +113,7 @@
   .post-row.free { border-left-color: var(--ok); }
   .post-row.busy { border-left-color: var(--warn); }
   .post-row.waiting { border-left-color: var(--info); }
+  .post-row.booked { border-left-color: var(--purple); }
 
   .post-main { display: flex; flex-direction: column; gap: 4px; }
   .post-name { font-weight: 600; font-size: 15px; }
@@ -152,6 +155,7 @@
   .badge.free { background: rgba(16,185,129,0.2); color: var(--ok); }
   .badge.busy { background: rgba(245,158,11,0.2); color: var(--warn); }
   .badge.waiting { background: rgba(99,102,241,0.2); color: var(--info); }
+  .badge.booked { background: rgba(168,85,247,0.2); color: var(--purple); }
 
   .btn {
     background: var(--accent);
@@ -168,6 +172,7 @@
   .btn.small { padding: 6px 12px; font-size: 12px; }
   .btn.danger { background: var(--err); }
   .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn.purple { background: var(--purple); }
 
   .list { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
   .item {
@@ -248,6 +253,20 @@
   .master-phone { font-size: 12px; color: var(--muted); }
   .master-actions { display: flex; gap: 6px; }
 
+  .booking-item {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 12px;
+    border-left: 3px solid var(--purple);
+    margin-bottom: 10px;
+  }
+  .booking-time {
+    font-size: 12px;
+    color: var(--purple);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
   .reports-section { margin-top: 24px; }
   .reports-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   .report-tab {
@@ -278,6 +297,36 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
+
+  .admin-section { margin-top: 24px; }
+  .admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+  }
+  .admin-card {
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .admin-card-title {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .admin-card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .admin-card-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
 </style>
 </head>
 <body>
@@ -300,7 +349,14 @@
       <div class="posts-list" id="posts"></div>
     </div>
 
-    <div class="panel" style="margin-top:20px;">
+    <div class="panel">
+      <h2>📅 Бронирования
+        <button class="btn small purple" onclick="openBookingModal()">+ Забронировать</button>
+      </h2>
+      <div id="bookings"></div>
+    </div>
+
+    <div class="panel">
       <h2>Активные заказ-наряды
         <button class="btn small" onclick="openOrderModal()">+ Новый заказ</button>
       </h2>
@@ -314,16 +370,24 @@
       <div class="list" id="queue"></div>
     </div>
 
-    <div class="panel" style="margin-top:20px;">
+    <div class="panel">
       <h2>Последние работы</h2>
       <div class="list" id="history"></div>
     </div>
   </div>
 </div>
 
+<!-- Админ-панель финансов -->
+<div class="admin-section">
+  <div class="panel">
+    <h2>💰 Финансы и статистика</h2>
+    <div class="admin-grid" id="adminStats"></div>
+  </div>
+</div>
+
 <div class="reports-section">
   <div class="panel">
-    <h2>📊 Отчёты и статистика</h2>
+    <h2>📊 Отчёты</h2>
     <div class="reports-tabs">
       <div class="report-tab active" onclick="switchReportTab('daily')">По дням</div>
       <div class="report-tab" onclick="switchReportTab('weekly')">По неделям</div>
@@ -364,6 +428,41 @@
         <button class="btn ghost" onclick="closeMastersModal()">Закрыть</button>
         <button class="btn" onclick="saveMaster()">Сохранить</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка бронирования -->
+<div class="modal" id="bookingModal">
+  <div class="modal-content">
+    <h3>📅 Бронирование подъемника</h3>
+    <div class="form-group">
+      <label>Подъёмник</label>
+      <select id="b-post"></select>
+    </div>
+    <div class="form-group">
+      <label>Клиент / Название</label>
+      <input id="b-client" placeholder="Иванов / ТО">
+    </div>
+    <div class="form-group">
+      <label>Дата и время начала</label>
+      <input id="b-start" type="datetime-local">
+    </div>
+    <div class="form-group">
+      <label>Дата и время окончания</label>
+      <input id="b-end" type="datetime-local">
+    </div>
+    <div class="form-group">
+      <label>Стоимость аренды (₽)</label>
+      <input id="b-price" type="number" value="0">
+    </div>
+    <div class="form-group">
+      <label>Комментарий (опционально)</label>
+      <textarea id="b-comment" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeBookingModal()">Отмена</button>
+      <button class="btn purple" onclick="saveBooking()">Забронировать</button>
     </div>
   </div>
 </div>
@@ -436,9 +535,11 @@ let state = {
   ],
   masters: [],
   orders: [],
+  bookings: [],
   queue: [],
   history: [],
   revenue: 0,
+  bookingRevenue: 0,
   servedToday: 0,
   dailyStats: {}
 };
@@ -477,6 +578,12 @@ function initFirebaseListeners() {
     render();
   });
 
+  db.ref('bookings').on('value', (snapshot) => {
+    const data = snapshot.val();
+    state.bookings = data ? Object.values(data) : [];
+    render();
+  });
+
   db.ref('history').on('value', (snapshot) => {
     const data = snapshot.val();
     state.history = data ? Object.values(data) : [];
@@ -487,6 +594,7 @@ function initFirebaseListeners() {
     const data = snapshot.val();
     if (data) {
       state.revenue = data.revenue || 0;
+      state.bookingRevenue = data.bookingRevenue || 0;
       state.servedToday = data.servedToday || 0;
       state.dailyStats = data.dailyStats || {};
       render();
@@ -507,9 +615,12 @@ function addOrder(order) { db.ref(`orders/${order.id}`).set(order); }
 function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(updates); }
 function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
 function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
+function addBooking(booking) { db.ref(`bookings/${booking.id}`).set(booking); }
+function removeBooking(bookingId) { db.ref(`bookings/${bookingId}`).remove(); }
 function updateStats() {
   db.ref('stats').set({
     revenue: state.revenue,
+    bookingRevenue: state.bookingRevenue,
     servedToday: state.servedToday,
     dailyStats: state.dailyStats
   });
@@ -568,7 +679,11 @@ function getDeadlineClass(deadlineTs) {
   return 'ok';
 }
 
-// ✅ ИСПРАВЛЕНИЕ: используем ID мастера вместо имени (Firebase не любит точки в ключах)
+function formatDateTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
 function updateDailyStats(order) {
   const today = getTodayKey();
   if (!state.dailyStats[today]) {
@@ -650,7 +765,6 @@ function renderWeeklyReports() {
   });
 }
 
-// ✅ ИСПРАВЛЕНИЕ: подставляем имена мастеров по ID
 function renderMastersReports() {
   destroyCharts();
   const mastersData = {};
@@ -709,7 +823,7 @@ function switchReportTab(tab) {
 }
 
 // ===== Рендер =====
-const statusLabels = { free: 'Свободен', busy: 'Занят', waiting: 'Ожидание' };
+const statusLabels = { free: 'Свободен', busy: 'Занят', waiting: 'Ожидание', booked: 'Забронирован' };
 
 function renderStats() {
   const busyCount = state.posts.filter(p => p.status === 'busy').length;
@@ -720,8 +834,36 @@ function renderStats() {
     <div class="stat"><div class="stat-label">Загрузка</div><div class="stat-value ${load>70?'warn':'ok'}">${load}%</div></div>
     <div class="stat"><div class="stat-label">Подъёмников занято</div><div class="stat-value accent">${busyCount} / ${total}</div></div>
     <div class="stat"><div class="stat-label">Обслужено сегодня</div><div class="stat-value ok">${state.servedToday}</div></div>
-    <div class="stat"><div class="stat-label">Выручка за день</div><div class="stat-value accent">${state.revenue.toLocaleString('ru-RU')} ₽</div></div>
     <div class="stat"><div class="stat-label">Срочных / просрочено</div><div class="stat-value ${urgent>0?'warn':'ok'}">${urgent}</div></div>
+  `;
+}
+
+function renderAdminStats() {
+  const today = getTodayKey();
+  const todayStats = state.dailyStats[today] || { revenue: 0, orders: 0 };
+  const totalRevenue = state.revenue + state.bookingRevenue;
+  
+  document.getElementById('adminStats').innerHTML = `
+    <div class="admin-card">
+      <div class="admin-card-title">Выручка за день (работы)</div>
+      <div class="admin-card-value">${todayStats.revenue.toLocaleString('ru-RU')} ₽</div>
+      <div class="admin-card-sub">${todayStats.orders} заказов</div>
+    </div>
+    <div class="admin-card">
+      <div class="admin-card-title">Аренда за день</div>
+      <div class="admin-card-value" style="color: var(--purple);">${state.bookingRevenue.toLocaleString('ru-RU')} ₽</div>
+      <div class="admin-card-sub">${state.bookings.filter(b => getDateKey(new Date(b.start)) === today).length} бронирований</div>
+    </div>
+    <div class="admin-card">
+      <div class="admin-card-title">Всего выручка</div>
+      <div class="admin-card-value">${totalRevenue.toLocaleString('ru-RU')} ₽</div>
+      <div class="admin-card-sub">Работы + Аренда</div>
+    </div>
+    <div class="admin-card">
+      <div class="admin-card-title">Всего обслужено</div>
+      <div class="admin-card-value">${state.servedToday}</div>
+      <div class="admin-card-sub">автомобилей сегодня</div>
+    </div>
   `;
 }
 
@@ -752,6 +894,36 @@ function renderPosts() {
         ${timer}
         ${deadline}
         <span class="badge ${p.status}">${statusLabels[p.status]}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderBookings() {
+  const el = document.getElementById('bookings');
+  const now = Date.now();
+  const activeBookings = state.bookings.filter(b => b.end > now).sort((a, b) => a.start - b.start);
+  
+  if (!activeBookings.length) {
+    el.innerHTML = '<div class="empty">Нет активных бронирований</div>';
+    return;
+  }
+  
+  el.innerHTML = activeBookings.map(b => {
+    const post = state.posts.find(p => p.id == b.postId);
+    const isToday = getDateKey(new Date(b.start)) === getTodayKey();
+    const statusClass = b.start > now ? 'ok' : 'warn';
+    const statusText = b.start > now ? 'Предстоит' : 'Идёт сейчас';
+    
+    return `
+      <div class="booking-item">
+        <div class="booking-time">📅 ${formatDateTime(b.start)} — ${formatDateTime(b.end)}</div>
+        <div class="item-main">${b.client}</div>
+        <div class="item-sub">${post?.name || '—'} · ${b.price} ₽ · <span style="color: var(--purple);">${statusText}</span></div>
+        ${b.comment ? `<div class="item-sub">${b.comment}</div>` : ''}
+        <div style="margin-top:8px;">
+          <button class="btn small danger" onclick="cancelBooking(${b.id})">Отменить</button>
+        </div>
       </div>
     `;
   }).join('');
@@ -826,7 +998,9 @@ function renderHistory() {
 
 function render() {
   renderStats();
+  renderAdminStats();
   renderPosts();
+  renderBookings();
   renderOrders();
   renderQueue();
   renderHistory();
@@ -895,6 +1069,66 @@ function deleteMaster(id) {
   removeMaster(id);
 }
 
+// ===== Бронирования =====
+function openBookingModal() {
+  const postSelect = document.getElementById('b-post');
+  postSelect.innerHTML = state.posts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  
+  const now = new Date();
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  document.getElementById('b-start').value = toLocalDatetime(now.getTime());
+  document.getElementById('b-end').value = toLocalDatetime(oneHourLater.getTime());
+  document.getElementById('b-client').value = '';
+  document.getElementById('b-price').value = 0;
+  document.getElementById('b-comment').value = '';
+  
+  document.getElementById('bookingModal').classList.add('open');
+}
+function closeBookingModal() { document.getElementById('bookingModal').classList.remove('open'); }
+
+function saveBooking() {
+  const postId = parseInt(document.getElementById('b-post').value);
+  const client = document.getElementById('b-client').value.trim();
+  const start = new Date(document.getElementById('b-start').value).getTime();
+  const end = new Date(document.getElementById('b-end').value).getTime();
+  const price = parseInt(document.getElementById('b-price').value) || 0;
+  const comment = document.getElementById('b-comment').value.trim();
+  
+  if (!client) { alert('Введите клиента'); return; }
+  if (end <= start) { alert('Время окончания должно быть позже начала'); return; }
+  if (start < Date.now()) {
+    if (!confirm('Время начала уже прошло. Продолжить?')) return;
+  }
+  
+  const booking = {
+    id: Date.now(),
+    postId,
+    client,
+    start,
+    end,
+    price,
+    comment
+  };
+  
+  addBooking(booking);
+  
+  // Добавляем к выручке за аренду
+  state.bookingRevenue += price;
+  updateStats();
+  
+  closeBookingModal();
+}
+
+function cancelBooking(id) {
+  if (!confirm('Отменить бронирование?')) return;
+  const booking = state.bookings.find(b => b.id == id);
+  if (booking) {
+    state.bookingRevenue -= booking.price;
+    updateStats();
+  }
+  removeBooking(id);
+}
+
 // ===== Заказ-наряды =====
 let editingOrder = null;
 
@@ -936,7 +1170,6 @@ function toLocalDatetime(ts) {
 
 function closeModal() { document.getElementById('orderModal').classList.remove('open'); }
 
-// ✅ ИСПРАВЛЕНИЕ: при создании заказа подъёмник НЕ становится busy, мастер не обязателен
 function saveOrder() {
   const postId = parseInt(document.getElementById('f-post').value);
   if (!postId) { alert('Выберите подъёмник'); return; }
@@ -967,7 +1200,6 @@ function saveOrder() {
     updateOrder(editingOrder.id, data);
   } else {
     addOrder(data);
-    // ✅ Подъёмник НЕ делаем busy при создании — только когда мастер возьмёт заказ
   }
   closeModal();
 }
@@ -1028,6 +1260,7 @@ function updateTimers() {
   renderStats();
   renderPosts();
   renderOrders();
+  renderBookings();
 }
 
 setInterval(tickClock, 1000);
