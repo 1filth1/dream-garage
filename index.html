@@ -113,7 +113,6 @@
   .post-row.free { border-left-color: var(--ok); }
   .post-row.busy { border-left-color: var(--warn); }
   .post-row.waiting { border-left-color: var(--info); }
-  .post-row.booked { border-left-color: var(--purple); }
 
   .post-main { display: flex; flex-direction: column; gap: 4px; }
   .post-name { font-weight: 600; font-size: 15px; }
@@ -155,7 +154,6 @@
   .badge.free { background: rgba(16,185,129,0.2); color: var(--ok); }
   .badge.busy { background: rgba(245,158,11,0.2); color: var(--warn); }
   .badge.waiting { background: rgba(99,102,241,0.2); color: var(--info); }
-  .badge.booked { background: rgba(168,85,247,0.2); color: var(--purple); }
 
   .btn {
     background: var(--accent);
@@ -166,14 +164,54 @@
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
   }
-  .btn:hover { opacity: 0.85; }
+  .btn:hover { opacity: 0.85; transform: translateY(-1px); }
   .btn.small { padding: 6px 12px; font-size: 12px; }
   .btn.danger { background: var(--err); }
   .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
   .btn.purple { background: var(--purple); }
   .btn.admin { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+
+  /* Большие кнопки действий */
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 18px 20px;
+    border-radius: 12px;
+    border: none;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  }
+  .action-btn:active {
+    transform: translateY(0);
+  }
+  .action-btn.order {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  }
+  .action-btn.booking {
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  }
+  .action-btn .icon {
+    font-size: 20px;
+  }
 
   .list { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
   .item {
@@ -369,7 +407,7 @@
   <div class="header-right">
     <span class="sync-status" id="syncStatus">⚪ Подключение...</span>
     <button class="btn ghost" onclick="openMastersModal()">👥 Мастера</button>
-    <button class="btn admin" onclick="openAdminModal()"> Админка</button>
+    <button class="btn admin" onclick="openAdminModal()">📊 Админка</button>
     <div class="clock" id="clock"></div>
   </div>
 </header>
@@ -384,16 +422,12 @@
     </div>
 
     <div class="panel">
-      <h2>📅 Бронирования
-        <button class="btn small purple" onclick="openBookingModal()">+ Забронировать</button>
-      </h2>
+      <h2>📅 Бронирования</h2>
       <div id="bookings"></div>
     </div>
 
     <div class="panel">
-      <h2>Активные заказ-наряды
-        <button class="btn small" onclick="openOrderModal()">+ Новый заказ</button>
-      </h2>
+      <h2>Активные заказ-наряды</h2>
       <div class="list" id="orders"></div>
     </div>
   </div>
@@ -402,6 +436,18 @@
     <div class="panel">
       <h2>Очередь <span class="badge waiting" id="queue-count">0</span></h2>
       <div class="list" id="queue"></div>
+      
+      <!-- Большие кнопки действий -->
+      <div class="action-buttons">
+        <button class="action-btn order" onclick="openOrderModal()">
+          <span class="icon">📋</span>
+          <span>Новый заказ</span>
+        </button>
+        <button class="action-btn booking" onclick="openBookingModal()">
+          <span class="icon">📅</span>
+          <span>Забронировать подъёмник</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -436,16 +482,14 @@
     </div>
     
     <div class="admin-tabs">
-      <button class="admin-tab active" onclick="switchAdminTab('finance')">💰 Финансы</button>
-      <button class="admin-tab" onclick="switchAdminTab('history')"> Последние работы</button>
+      <button class="admin-tab active" onclick="switchAdminTab('finance', this)">💰 Финансы</button>
+      <button class="admin-tab" onclick="switchAdminTab('history', this)">📋 Последние работы</button>
     </div>
     
-    <!-- Финансы -->
     <div id="adminFinance" class="admin-tab-content active">
       <div class="admin-grid" id="adminStats"></div>
     </div>
     
-    <!-- История работ -->
     <div id="adminHistory" class="admin-tab-content">
       <div class="list" id="adminHistoryList"></div>
     </div>
@@ -546,7 +590,7 @@
       <select id="f-post"></select>
     </div>
     <div class="form-group">
-      <label> Выдать автомобиль к (опционально)</label>
+      <label>⏰ Выдать автомобиль к (опционально)</label>
       <input id="f-deadline" type="datetime-local">
     </div>
     <div class="modal-actions">
@@ -596,7 +640,7 @@ function initFirebaseListeners() {
   connectedRef.on('value', (snap) => {
     const statusEl = document.getElementById('syncStatus');
     if (snap.val() === true) {
-      statusEl.textContent = ' Синхронизировано';
+      statusEl.textContent = '🟢 Синхронизировано';
       statusEl.className = 'sync-status connected';
     } else {
       statusEl.textContent = '🔴 Нет связи';
@@ -606,36 +650,24 @@ function initFirebaseListeners() {
 
   db.ref('posts').on('value', (snapshot) => {
     const data = snapshot.val();
-    if (data) {
-      state.posts = Object.values(data);
-      render();
-    }
+    if (data) { state.posts = Object.values(data); render(); }
   });
-
   db.ref('masters').on('value', (snapshot) => {
-    const data = snapshot.val();
-    state.masters = data ? Object.values(data) : [];
+    state.masters = snapshot.val() ? Object.values(snapshot.val()) : [];
     render();
   });
-
   db.ref('orders').on('value', (snapshot) => {
-    const data = snapshot.val();
-    state.orders = data ? Object.values(data) : [];
+    state.orders = snapshot.val() ? Object.values(snapshot.val()) : [];
     render();
   });
-
   db.ref('bookings').on('value', (snapshot) => {
-    const data = snapshot.val();
-    state.bookings = data ? Object.values(data) : [];
+    state.bookings = snapshot.val() ? Object.values(snapshot.val()) : [];
     render();
   });
-
   db.ref('history').on('value', (snapshot) => {
-    const data = snapshot.val();
-    state.history = data ? Object.values(data) : [];
+    state.history = snapshot.val() ? Object.values(snapshot.val()) : [];
     render();
   });
-
   db.ref('stats').on('value', (snapshot) => {
     const data = snapshot.val();
     if (data) {
@@ -652,9 +684,7 @@ function initFirebaseListeners() {
 function updatePost(postId, updates) { db.ref(`posts/${postId}`).update(updates); }
 function initPosts() {
   db.ref('posts').once('value', (snap) => {
-    if (!snap.exists()) {
-      state.posts.forEach(p => db.ref(`posts/${p.id}`).set(p));
-    }
+    if (!snap.exists()) state.posts.forEach(p => db.ref(`posts/${p.id}`).set(p));
   });
 }
 function addOrder(order) { db.ref(`orders/${order.id}`).set(order); }
@@ -694,7 +724,6 @@ function formatWeek(weekKey) {
   end.setDate(d.getDate() + 6);
   return `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`;
 }
-
 function formatTime(ms) {
   const totalSec = Math.floor(Math.abs(ms) / 1000);
   const hours = Math.floor(totalSec / 3600);
@@ -703,7 +732,6 @@ function formatTime(ms) {
   if (hours > 0) return `${hours}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
   return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 }
-
 function formatCountdown(deadlineTs) {
   const diff = deadlineTs - Date.now();
   const abs = Math.abs(diff);
@@ -717,33 +745,24 @@ function formatCountdown(deadlineTs) {
   const secs = Math.floor((abs % 60000) / 1000);
   return `${mins}м ${String(secs).padStart(2,'0')}с`;
 }
-
 function getDeadlineClass(deadlineTs) {
   const diff = deadlineTs - Date.now();
   if (diff < 0) return 'err';
   if (diff < 30 * 60 * 1000) return 'warn';
   return 'ok';
 }
-
 function formatDateTime(ts) {
   const d = new Date(ts);
   return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
-
 function updateDailyStats(order) {
   const today = getTodayKey();
-  if (!state.dailyStats[today]) {
-    state.dailyStats[today] = { revenue: 0, orders: 0, masters: {} };
-  }
+  if (!state.dailyStats[today]) state.dailyStats[today] = { revenue: 0, orders: 0, masters: {} };
   state.dailyStats[today].revenue += order.price || 0;
   state.dailyStats[today].orders += 1;
-  
   const masterId = order.masterId || 'unassigned';
-  if (!state.dailyStats[today].masters[masterId]) {
-    state.dailyStats[today].masters[masterId] = 0;
-  }
+  if (!state.dailyStats[today].masters[masterId]) state.dailyStats[today].masters[masterId] = 0;
   state.dailyStats[today].masters[masterId] += order.price || 0;
-  
   updateStats();
 }
 
@@ -754,30 +773,21 @@ function initCharts() {
   Chart.defaults.borderColor = '#2d3642';
   Chart.defaults.font.family = '-apple-system, "Segoe UI", Roboto, sans-serif';
 }
-function destroyCharts() {
-  Object.values(charts).forEach(c => c.destroy());
-  charts = {};
-}
+function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
 
 function renderDailyReports() {
   destroyCharts();
   const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    days.push(getDateKey(d));
-  }
+  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(getDateKey(d)); }
   const labels = days.map(formatDate);
-  const loadData = days.map(day => state.dailyStats[day]?.orders || 0);
-  const revenueData = days.map(day => state.dailyStats[day]?.revenue || 0);
-
   charts.dailyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), {
     type: 'bar',
-    data: { labels, datasets: [{ label: 'Заказов', data: loadData, backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 2, borderRadius: 6 }] },
+    data: { labels, datasets: [{ data: days.map(day => state.dailyStats[day]?.orders || 0), backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 2, borderRadius: 6 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
   });
   charts.dailyRevenue = new Chart(document.getElementById('dailyRevenueChart').getContext('2d'), {
     type: 'line',
-    data: { labels, datasets: [{ label: 'Выручка', data: revenueData, borderColor: 'rgba(16,185,129,1)', backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] },
+    data: { labels, datasets: [{ data: days.map(day => state.dailyStats[day]?.revenue || 0), borderColor: 'rgba(16,185,129,1)', backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 6 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('ru-RU') + ' ₽' } } } }
   });
 }
@@ -785,18 +795,11 @@ function renderDailyReports() {
 function renderWeeklyReports() {
   destroyCharts();
   const weeks = [];
-  for (let i = 3; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i * 7);
-    weeks.push(getWeekKey(d));
-  }
+  for (let i = 3; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i * 7); weeks.push(getWeekKey(d)); }
   const labels = weeks.map(formatWeek);
   const sumWeek = (weekKey, field) => {
     let total = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekKey); d.setDate(d.getDate() + i);
-      const s = state.dailyStats[getDateKey(d)];
-      if (s) total += (field === 'revenue' ? s.revenue : s.orders);
-    }
+    for (let i = 0; i < 7; i++) { const d = new Date(weekKey); d.setDate(d.getDate() + i); const s = state.dailyStats[getDateKey(d)]; if (s) total += (field === 'revenue' ? s.revenue : s.orders); }
     return total;
   };
   charts.weeklyLoad = new Chart(document.getElementById('dailyLoadChart').getContext('2d'), {
@@ -814,37 +817,16 @@ function renderWeeklyReports() {
 function renderMastersReports() {
   destroyCharts();
   const mastersData = {};
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const s = state.dailyStats[getDateKey(d)];
-    if (s) Object.entries(s.masters).forEach(([id, r]) => { mastersData[id] = (mastersData[id] || 0) + r; });
-  }
+  for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); const s = state.dailyStats[getDateKey(d)]; if (s) Object.entries(s.masters).forEach(([id, r]) => { mastersData[id] = (mastersData[id] || 0) + r; }); }
   const masterIds = Object.keys(mastersData);
-  if (!masterIds.length) {
-    document.getElementById('reportContent').innerHTML = '<div class="empty">Нет данных по мастерам</div>';
-    return;
-  }
-  
-  const labels = masterIds.map(id => {
-    const m = state.masters.find(x => String(x.id) === String(id));
-    return m ? m.name : (id === 'unassigned' ? 'Не назначен' : id);
-  });
-  
+  if (!masterIds.length) { document.getElementById('reportContent').innerHTML = '<div class="empty">Нет данных по мастерам</div>'; return; }
+  const labels = masterIds.map(id => { const m = state.masters.find(x => String(x.id) === String(id)); return m ? m.name : (id === 'unassigned' ? 'Не назначен' : id); });
   document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Выручка по мастерам (7 дней)</div><canvas id="mastersChart"></canvas></div>`;
   const colors = ['rgba(59,130,246,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.8)','rgba(239,68,68,0.8)','rgba(99,102,241,0.8)'];
   charts.masters = new Chart(document.getElementById('mastersChart').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: labels, datasets: [{ data: Object.values(mastersData), backgroundColor: colors.slice(0, masterIds.length), borderWidth: 0 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'right' },
-        tooltip: { callbacks: { label: ctx => {
-          const v = ctx.parsed, t = ctx.dataset.data.reduce((a,b)=>a+b,0);
-          return `${ctx.label}: ${v.toLocaleString('ru-RU')} ₽ (${((v/t)*100).toFixed(1)}%)`;
-        }}}
-      }
-    }
+    data: { labels, datasets: [{ data: Object.values(mastersData), backgroundColor: colors.slice(0, masterIds.length), borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: ctx => { const v = ctx.parsed, t = ctx.dataset.data.reduce((a,b)=>a+b,0); return `${ctx.label}: ${v.toLocaleString('ru-RU')} ₽ (${((v/t)*100).toFixed(1)}%)`; } } } } }
   });
 }
 
@@ -854,36 +836,22 @@ function switchReportTab(tab) {
   document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
   if (tab === 'daily') {
-    document.getElementById('reportContent').innerHTML = `
-      <div class="chart-container"><div class="chart-title">Загрузка по дням (7 дней)</div><canvas id="dailyLoadChart"></canvas></div>
-      <div class="chart-container"><div class="chart-title">Выручка по дням (7 дней)</div><canvas id="dailyRevenueChart"></canvas></div>`;
+    document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Загрузка по дням (7 дней)</div><canvas id="dailyLoadChart"></canvas></div><div class="chart-container"><div class="chart-title">Выручка по дням (7 дней)</div><canvas id="dailyRevenueChart"></canvas></div>`;
     renderDailyReports();
   } else if (tab === 'weekly') {
-    document.getElementById('reportContent').innerHTML = `
-      <div class="chart-container"><div class="chart-title">Загрузка по неделям (4 недели)</div><canvas id="dailyLoadChart"></canvas></div>
-      <div class="chart-container"><div class="chart-title">Выручка по неделям (4 недели)</div><canvas id="dailyRevenueChart"></canvas></div>`;
+    document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Загрузка по неделям (4 недели)</div><canvas id="dailyLoadChart"></canvas></div><div class="chart-container"><div class="chart-title">Выручка по неделям (4 недели)</div><canvas id="dailyRevenueChart"></canvas></div>`;
     renderWeeklyReports();
-  } else if (tab === 'masters') {
-    renderMastersReports();
-  }
+  } else if (tab === 'masters') renderMastersReports();
 }
 
 // ===== Админ-панель =====
-function openAdminModal() {
-  renderAdminStats();
-  renderAdminHistory();
-  document.getElementById('adminModal').classList.add('open');
-}
+function openAdminModal() { renderAdminStats(); renderAdminHistory(); document.getElementById('adminModal').classList.add('open'); }
+function closeAdminModal() { document.getElementById('adminModal').classList.remove('open'); }
 
-function closeAdminModal() {
-  document.getElementById('adminModal').classList.remove('open');
-}
-
-function switchAdminTab(tab) {
+function switchAdminTab(tab, el) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
-  
-  event.target.classList.add('active');
+  el.classList.add('active');
   document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
 }
 
@@ -891,51 +859,25 @@ function renderAdminStats() {
   const today = getTodayKey();
   const todayStats = state.dailyStats[today] || { revenue: 0, orders: 0 };
   const totalRevenue = state.revenue + state.bookingRevenue;
-  
   document.getElementById('adminStats').innerHTML = `
-    <div class="admin-card">
-      <div class="admin-card-title">Выручка за день (работы)</div>
-      <div class="admin-card-value">${todayStats.revenue.toLocaleString('ru-RU')} ₽</div>
-      <div class="admin-card-sub">${todayStats.orders} заказов</div>
-    </div>
-    <div class="admin-card">
-      <div class="admin-card-title">Аренда за день</div>
-      <div class="admin-card-value" style="color: var(--purple);">${state.bookingRevenue.toLocaleString('ru-RU')} ₽</div>
-      <div class="admin-card-sub">${state.bookings.filter(b => getDateKey(new Date(b.start)) === today).length} бронирований</div>
-    </div>
-    <div class="admin-card">
-      <div class="admin-card-title">Всего выручка</div>
-      <div class="admin-card-value">${totalRevenue.toLocaleString('ru-RU')} ₽</div>
-      <div class="admin-card-sub">Работы + Аренда</div>
-    </div>
-    <div class="admin-card">
-      <div class="admin-card-title">Всего обслужено</div>
-      <div class="admin-card-value">${state.servedToday}</div>
-      <div class="admin-card-sub">автомобилей сегодня</div>
-    </div>
+    <div class="admin-card"><div class="admin-card-title">Выручка за день (работы)</div><div class="admin-card-value">${todayStats.revenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">${todayStats.orders} заказов</div></div>
+    <div class="admin-card"><div class="admin-card-title">Аренда за день</div><div class="admin-card-value" style="color: var(--purple);">${state.bookingRevenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">${state.bookings.filter(b => getDateKey(new Date(b.start)) === today).length} бронирований</div></div>
+    <div class="admin-card"><div class="admin-card-title">Всего выручка</div><div class="admin-card-value">${totalRevenue.toLocaleString('ru-RU')} ₽</div><div class="admin-card-sub">Работы + Аренда</div></div>
+    <div class="admin-card"><div class="admin-card-title">Всего обслужено</div><div class="admin-card-value">${state.servedToday}</div><div class="admin-card-sub">автомобилей сегодня</div></div>
   `;
 }
 
 function renderAdminHistory() {
   const el = document.getElementById('adminHistoryList');
-  if (!state.history.length) {
-    el.innerHTML = '<div class="empty">Пока нет завершённых работ</div>';
-    return;
-  }
+  if (!state.history.length) { el.innerHTML = '<div class="empty">Пока нет завершённых работ</div>'; return; }
   el.innerHTML = state.history.slice(0, 20).map(h => {
     const masterName = h.masterId ? (state.masters.find(m => String(m.id) === String(h.masterId))?.name || h.master) : h.master;
-    return `
-      <div class="item">
-        <div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div>
-        <div class="item-main">${h.car}</div>
-        <div class="item-sub">${h.services} · ${masterName || '—'} · ${h.price} ₽</div>
-      </div>
-    `;
+    return `<div class="item"><div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div><div class="item-main">${h.car}</div><div class="item-sub">${h.services} · ${masterName || '—'} · ${h.price} ₽</div></div>`;
   }).join('');
 }
 
 // ===== Рендер =====
-const statusLabels = { free: 'Свободен', busy: 'Занят', waiting: 'Ожидание', booked: 'Забронирован' };
+const statusLabels = { free: 'Свободен', busy: 'Занят', waiting: 'Ожидание' };
 
 function renderStats() {
   const busyCount = state.posts.filter(p => p.status === 'busy').length;
@@ -968,17 +910,7 @@ function renderPosts() {
       info = `<div class="post-info">Нет активного заказа</div>`;
       timer = `<div class="post-timer idle">—</div>`;
     }
-    return `
-      <div class="post-row ${p.status}" onclick="cycleStatus(${p.id})">
-        <div class="post-main">
-          <div class="post-name">${p.name}</div>
-          ${info}
-        </div>
-        ${timer}
-        ${deadline}
-        <span class="badge ${p.status}">${statusLabels[p.status]}</span>
-      </div>
-    `;
+    return `<div class="post-row ${p.status}" onclick="cycleStatus(${p.id})"><div class="post-main"><div class="post-name">${p.name}</div>${info}</div>${timer}${deadline}<span class="badge ${p.status}">${statusLabels[p.status]}</span></div>`;
   }).join('');
 }
 
@@ -986,38 +918,17 @@ function renderBookings() {
   const el = document.getElementById('bookings');
   const now = Date.now();
   const activeBookings = state.bookings.filter(b => b.end > now).sort((a, b) => a.start - b.start);
-  
-  if (!activeBookings.length) {
-    el.innerHTML = '<div class="empty">Нет активных бронирований</div>';
-    return;
-  }
-  
+  if (!activeBookings.length) { el.innerHTML = '<div class="empty">Нет активных бронирований</div>'; return; }
   el.innerHTML = activeBookings.map(b => {
     const post = state.posts.find(p => p.id == b.postId);
-    const isToday = getDateKey(new Date(b.start)) === getTodayKey();
-    const statusClass = b.start > now ? 'ok' : 'warn';
     const statusText = b.start > now ? 'Предстоит' : 'Идёт сейчас';
-    
-    return `
-      <div class="booking-item">
-        <div class="booking-time">📅 ${formatDateTime(b.start)} — ${formatDateTime(b.end)}</div>
-        <div class="item-main">${b.client}</div>
-        <div class="item-sub">${post?.name || '—'} · ${b.price} ₽ · <span style="color: var(--purple);">${statusText}</span></div>
-        ${b.comment ? `<div class="item-sub">${b.comment}</div>` : ''}
-        <div style="margin-top:8px;">
-          <button class="btn small danger" onclick="cancelBooking(${b.id})">Отменить</button>
-        </div>
-      </div>
-    `;
+    return `<div class="booking-item"><div class="booking-time">📅 ${formatDateTime(b.start)} — ${formatDateTime(b.end)}</div><div class="item-main">${b.client}</div><div class="item-sub">${post?.name || '—'} · ${b.price} ₽ · <span style="color: var(--purple);">${statusText}</span></div>${b.comment ? `<div class="item-sub">${b.comment}</div>` : ''}<div style="margin-top:8px;"><button class="btn small danger" onclick="cancelBooking(${b.id})">Отменить</button></div></div>`;
   }).join('');
 }
 
 function renderOrders() {
   const el = document.getElementById('orders');
-  if (!state.orders.length) {
-    el.innerHTML = '<div class="empty">Нет активных заказов</div>';
-    return;
-  }
+  if (!state.orders.length) { el.innerHTML = '<div class="empty">Нет активных заказов</div>'; return; }
   el.innerHTML = state.orders.map(o => {
     const post = state.posts.find(p => p.id === o.postId);
     const elapsed = o.startedAt ? Math.round((Date.now() - o.startedAt) / 60000) : 0;
@@ -1027,26 +938,8 @@ function renderOrders() {
       const prefix = cls === 'err' ? '⚠ Просрочено: ' : '⏱ Осталось: ';
       deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
     }
-    const statusBadge = o.status === 'in-progress' 
-      ? '<span class="badge busy" style="margin-left:6px;">В работе</span>' 
-      : '<span class="badge waiting" style="margin-left:6px;">Ожидает мастера</span>';
-    return `
-      <div class="item">
-        <div class="item-top">
-          <span>#${o.id} ${deadlineHtml}${statusBadge}</span>
-          <span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span>
-        </div>
-        <div class="item-main">${o.car}</div>
-        <div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div>
-        <div class="item-sub">${post?.name || '—'} · ${o.master || 'Не назначен'} · ${o.price} ₽</div>
-        ${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
-        <div style="margin-top:8px; display:flex; gap:6px;">
-          <button class="btn small" onclick="completeOrder(${o.id})">Завершить</button>
-          <button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">Изменить</button>
-          <button class="btn small danger" onclick="cancelOrder(${o.id})">Отменить</button>
-        </div>
-      </div>
-    `;
+    const statusBadge = o.status === 'in-progress' ? '<span class="badge busy" style="margin-left:6px;">В работе</span>' : '<span class="badge waiting" style="margin-left:6px;">Ожидает мастера</span>';
+    return `<div class="item"><div class="item-top"><span>#${o.id} ${deadlineHtml}${statusBadge}</span><span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span></div><div class="item-main">${o.car}</div><div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div><div class="item-sub">${post?.name || '—'} · ${o.master || 'Не назначен'} · ${o.price} ₽</div>${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}<div style="margin-top:8px; display:flex; gap:6px;"><button class="btn small" onclick="completeOrder(${o.id})">Завершить</button><button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">Изменить</button><button class="btn small danger" onclick="cancelOrder(${o.id})">Отменить</button></div></div>`;
   }).join('');
 }
 
@@ -1054,14 +947,7 @@ function renderQueue() {
   document.getElementById('queue-count').textContent = state.queue.length;
   const el = document.getElementById('queue');
   if (!state.queue.length) { el.innerHTML = '<div class="empty">Очередь пуста</div>'; return; }
-  el.innerHTML = state.queue.map((q, i) => `
-    <div class="item">
-      <div class="item-top"><span>#${i+1}</span><span>${q.createdAt}</span></div>
-      <div class="item-main">${q.car}</div>
-      <div class="item-sub">${q.client} · ${q.services}</div>
-      <div style="margin-top:8px;"><button class="btn small" onclick="startFromQueue(${q.id})">Принять</button></div>
-    </div>
-  `).join('');
+  el.innerHTML = state.queue.map((q, i) => `<div class="item"><div class="item-top"><span>#${i+1}</span><span>${q.createdAt}</span></div><div class="item-main">${q.car}</div><div class="item-sub">${q.client} · ${q.services}</div><div style="margin-top:8px;"><button class="btn small" onclick="startFromQueue(${q.id})">Принять</button></div></div>`).join('');
 }
 
 function render() {
@@ -1072,86 +958,38 @@ function render() {
   renderQueue();
 }
 
-// ===== Управление мастерами =====
+// ===== Мастера =====
 let editingMasterId = null;
-
-function openMastersModal() {
-  editingMasterId = null;
-  renderMastersList();
-  ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('mastersModal').classList.add('open');
-}
+function openMastersModal() { editingMasterId = null; renderMastersList(); ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = ''); document.getElementById('mastersModal').classList.add('open'); }
 function closeMastersModal() { document.getElementById('mastersModal').classList.remove('open'); }
-
 function renderMastersList() {
   const el = document.getElementById('mastersList');
-  if (!state.masters.length) {
-    el.innerHTML = '<div class="empty">Список мастеров пуст</div>';
-    return;
-  }
-  el.innerHTML = state.masters.map(m => `
-    <div class="master-item">
-      <div class="master-info">
-        <div class="master-name">${m.name}</div>
-        ${m.phone ? `<div class="master-phone">📞 ${m.phone}</div>` : ''}
-        ${m.spec ? `<div class="master-phone">🔧 ${m.spec}</div>` : ''}
-      </div>
-      <div class="master-actions">
-        <button class="btn small ghost" onclick="editMaster(${m.id})">✎</button>
-        <button class="btn small danger" onclick="deleteMaster(${m.id})">✕</button>
-      </div>
-    </div>
-  `).join('');
+  if (!state.masters.length) { el.innerHTML = '<div class="empty">Список мастеров пуст</div>'; return; }
+  el.innerHTML = state.masters.map(m => `<div class="master-item"><div class="master-info"><div class="master-name">${m.name}</div>${m.phone ? `<div class="master-phone">📞 ${m.phone}</div>` : ''}${m.spec ? `<div class="master-phone">🔧 ${m.spec}</div>` : ''}</div><div class="master-actions"><button class="btn small ghost" onclick="editMaster(${m.id})">✎</button><button class="btn small danger" onclick="deleteMaster(${m.id})">✕</button></div></div>`).join('');
 }
-
-function editMaster(id) {
-  const m = state.masters.find(x => x.id == id);
-  if (!m) return;
-  editingMasterId = id;
-  document.getElementById('m-name').value = m.name;
-  document.getElementById('m-phone').value = m.phone || '';
-  document.getElementById('m-spec').value = m.spec || '';
-}
-
+function editMaster(id) { const m = state.masters.find(x => x.id == id); if (!m) return; editingMasterId = id; document.getElementById('m-name').value = m.name; document.getElementById('m-phone').value = m.phone || ''; document.getElementById('m-spec').value = m.spec || ''; }
 function saveMaster() {
   const name = document.getElementById('m-name').value.trim();
   if (!name) { alert('Введите имя мастера'); return; }
-  const data = {
-    name,
-    phone: document.getElementById('m-phone').value.trim(),
-    spec: document.getElementById('m-spec').value.trim()
-  };
-  if (editingMasterId) {
-    updateMaster(editingMasterId, data);
-  } else {
-    addMaster({ id: Date.now(), ...data });
-  }
+  const data = { name, phone: document.getElementById('m-phone').value.trim(), spec: document.getElementById('m-spec').value.trim() };
+  if (editingMasterId) updateMaster(editingMasterId, data); else addMaster({ id: Date.now(), ...data });
   ['m-name','m-phone','m-spec'].forEach(id => document.getElementById(id).value = '');
   editingMasterId = null;
 }
-
-function deleteMaster(id) {
-  if (!confirm('Удалить мастера?')) return;
-  removeMaster(id);
-}
+function deleteMaster(id) { if (!confirm('Удалить мастера?')) return; removeMaster(id); }
 
 // ===== Бронирования =====
 function openBookingModal() {
-  const postSelect = document.getElementById('b-post');
-  postSelect.innerHTML = state.posts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-  
+  document.getElementById('b-post').innerHTML = state.posts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
   const now = new Date();
-  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
   document.getElementById('b-start').value = toLocalDatetime(now.getTime());
-  document.getElementById('b-end').value = toLocalDatetime(oneHourLater.getTime());
+  document.getElementById('b-end').value = toLocalDatetime(now.getTime() + 60 * 60 * 1000);
   document.getElementById('b-client').value = '';
   document.getElementById('b-price').value = 0;
   document.getElementById('b-comment').value = '';
-  
   document.getElementById('bookingModal').classList.add('open');
 }
 function closeBookingModal() { document.getElementById('bookingModal').classList.remove('open'); }
-
 function saveBooking() {
   const postId = parseInt(document.getElementById('b-post').value);
   const client = document.getElementById('b-client').value.trim();
@@ -1159,57 +997,29 @@ function saveBooking() {
   const end = new Date(document.getElementById('b-end').value).getTime();
   const price = parseInt(document.getElementById('b-price').value) || 0;
   const comment = document.getElementById('b-comment').value.trim();
-  
   if (!client) { alert('Введите клиента'); return; }
   if (end <= start) { alert('Время окончания должно быть позже начала'); return; }
-  if (start < Date.now()) {
-    if (!confirm('Время начала уже прошло. Продолжить?')) return;
-  }
-  
-  const booking = {
-    id: Date.now(),
-    postId,
-    client,
-    start,
-    end,
-    price,
-    comment
-  };
-  
-  addBooking(booking);
-  
+  if (start < Date.now()) { if (!confirm('Время начала уже прошло. Продолжить?')) return; }
+  addBooking({ id: Date.now(), postId, client, start, end, price, comment });
   state.bookingRevenue += price;
   updateStats();
-  
   closeBookingModal();
 }
-
 function cancelBooking(id) {
   if (!confirm('Отменить бронирование?')) return;
   const booking = state.bookings.find(b => b.id == id);
-  if (booking) {
-    state.bookingRevenue -= booking.price;
-    updateStats();
-  }
+  if (booking) { state.bookingRevenue -= booking.price; updateStats(); }
   removeBooking(id);
 }
 
-// ===== Заказ-наряды =====
+// ===== Заказы =====
 let editingOrder = null;
-
 function openOrderModal(order = null) {
   editingOrder = order;
   document.getElementById('modalTitle').textContent = order ? 'Редактировать заказ' : 'Новый заказ-наряд';
-
-  const masterSelect = document.getElementById('f-master');
-  masterSelect.innerHTML = '<option value="">— не назначен —</option>' +
-    state.masters.map(m => `<option value="${m.name}">${m.name}${m.spec ? ' (' + m.spec + ')' : ''}</option>`).join('');
-
+  document.getElementById('f-master').innerHTML = '<option value="">— не назначен —</option>' + state.masters.map(m => `<option value="${m.name}">${m.name}${m.spec ? ' (' + m.spec + ')' : ''}</option>`).join('');
   const freePosts = state.posts.filter(p => p.status === 'free' || (order && p.id == order.postId));
-  document.getElementById('f-post').innerHTML = freePosts.map(p =>
-    `<option value="${p.id}">${p.name}</option>`
-  ).join('') || '<option value="">Нет свободных подъёмников</option>';
-
+  document.getElementById('f-post').innerHTML = freePosts.map(p => `<option value="${p.id}">${p.name}</option>`).join('') || '<option value="">Нет свободных подъёмников</option>';
   if (order) {
     document.getElementById('f-client').value = order.client;
     document.getElementById('f-phone').value = order.phone || '';
@@ -1226,22 +1036,14 @@ function openOrderModal(order = null) {
   }
   document.getElementById('orderModal').classList.add('open');
 }
-
-function toLocalDatetime(ts) {
-  const d = new Date(ts);
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
+function toLocalDatetime(ts) { const d = new Date(ts); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 function closeModal() { document.getElementById('orderModal').classList.remove('open'); }
-
 function saveOrder() {
   const postId = parseInt(document.getElementById('f-post').value);
   if (!postId) { alert('Выберите подъёмник'); return; }
   const deadlineVal = document.getElementById('f-deadline').value;
   const masterName = document.getElementById('f-master').value;
   const master = state.masters.find(m => m.name === masterName);
-  
   const data = {
     id: editingOrder?.id || Date.now(),
     client: document.getElementById('f-client').value.trim(),
@@ -1251,24 +1053,16 @@ function saveOrder() {
     master: masterName || null,
     masterId: master ? String(master.id) : null,
     price: parseInt(document.getElementById('f-price').value) || 0,
-    postId: postId,
+    postId,
     startedAt: editingOrder?.startedAt || null,
     deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
     status: editingOrder?.status || 'new'
   };
   if (!data.client || !data.car) { alert('Заполните клиента и авто'); return; }
-  if (data.deadline && data.deadline <= Date.now()) {
-    if (!confirm('Указанное время уже прошло. Продолжить?')) return;
-  }
-
-  if (editingOrder) {
-    updateOrder(editingOrder.id, data);
-  } else {
-    addOrder(data);
-  }
+  if (data.deadline && data.deadline <= Date.now()) { if (!confirm('Указанное время уже прошло. Продолжить?')) return; }
+  if (editingOrder) updateOrder(editingOrder.id, data); else addOrder(data);
   closeModal();
 }
-
 function completeOrder(id) {
   const o = state.orders.find(x => x.id == id);
   if (!o) return;
@@ -1283,14 +1077,12 @@ function completeOrder(id) {
   else if (currentReportTab === 'weekly') renderWeeklyReports();
   else if (currentReportTab === 'masters') renderMastersReports();
 }
-
 function cancelOrder(id) {
   if (!confirm('Отменить заказ?')) return;
   const o = state.orders.find(x => x.id == id);
   removeOrder(id);
   updatePost(o.postId, { status: 'free' });
 }
-
 function startFromQueue(id) {
   const q = state.queue.find(x => x.id === id);
   if (!q) return;
@@ -1300,34 +1092,20 @@ function startFromQueue(id) {
   state.queue = state.queue.filter(x => x.id !== id);
   render();
 }
-
 function cycleStatus(postId) {
   const p = state.posts.find(x => x.id == postId);
   const order = state.orders.find(o => o.postId == postId);
-  if (order && p.status === 'busy') {
-    if (confirm('На этом подъёмнике активный заказ. Завершить его?')) completeOrder(order.id);
-    return;
-  }
+  if (order && p.status === 'busy') { if (confirm('На этом подъёмнике активный заказ. Завершить его?')) completeOrder(order.id); return; }
   const cycle = ['free','busy','waiting'];
-  const newStatus = cycle[(cycle.indexOf(p.status) + 1) % cycle.length];
-  updatePost(postId, { status: newStatus });
+  updatePost(postId, { status: cycle[(cycle.indexOf(p.status) + 1) % cycle.length] });
 }
 
-// ===== Часы и таймеры =====
+// ===== Часы =====
 function tickClock() {
   const d = new Date();
-  document.getElementById('clock').textContent =
-    d.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'}) +
-    ' · ' + d.toLocaleTimeString('ru-RU');
+  document.getElementById('clock').textContent = d.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'}) + ' · ' + d.toLocaleTimeString('ru-RU');
 }
-
-function updateTimers() {
-  renderStats();
-  renderPosts();
-  renderOrders();
-  renderBookings();
-}
-
+function updateTimers() { renderStats(); renderPosts(); renderOrders(); renderBookings(); }
 setInterval(tickClock, 1000);
 setInterval(updateTimers, 1000);
 tickClock();
