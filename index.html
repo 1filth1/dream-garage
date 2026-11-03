@@ -22,6 +22,7 @@
     --info: #6366f1;
     --err: #ef4444;
     --purple: #a855f7;
+    --cyan: #06b6d4;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -167,13 +168,14 @@
     transition: all 0.2s;
   }
   .btn:hover { opacity: 0.85; transform: translateY(-1px); }
-  .btn.small { padding: 6px 12px; font-size: 12px; }
+  .btn.small { padding: 6px 10px; font-size: 11px; }
   .btn.danger { background: var(--err); }
   .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
   .btn.purple { background: var(--purple); }
+  .btn.ok { background: var(--ok); }
+  .btn.cyan { background: var(--cyan); }
   .btn.admin { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 
-  /* Большие кнопки действий */
   .action-buttons {
     display: flex;
     flex-direction: column;
@@ -196,22 +198,12 @@
     text-align: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   }
-  .action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-  }
-  .action-btn:active {
-    transform: translateY(0);
-  }
-  .action-btn.order {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  }
-  .action-btn.booking {
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-  }
-  .action-btn .icon {
-    font-size: 20px;
-  }
+  .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.3); }
+  .action-btn:active { transform: translateY(0); }
+  .action-btn.order { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+  .action-btn.booking { background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); }
+  .action-btn.repair { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
+  .action-btn .icon { font-size: 20px; }
 
   .list { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
   .item {
@@ -220,6 +212,7 @@
     padding: 12px;
     border-left: 3px solid var(--accent);
   }
+  .item.repair-zone { border-left-color: var(--cyan); }
   .item-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
   .item-main { font-weight: 600; margin-bottom: 4px; }
   .item-sub { font-size: 12px; color: var(--muted); }
@@ -259,9 +252,7 @@
     max-height: 90vh;
     overflow-y: auto;
   }
-  .modal-content.large {
-    max-width: 900px;
-  }
+  .modal-content.large { max-width: 900px; }
   .modal-content h3 { margin-bottom: 16px; }
   .form-group { margin-bottom: 14px; }
   .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
@@ -276,7 +267,7 @@
     font-family: inherit;
   }
   .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
 
   .empty { color: var(--muted); text-align: center; padding: 20px; font-size: 13px; }
 
@@ -308,36 +299,11 @@
     font-weight: 600;
     margin-bottom: 4px;
   }
-
-  .reports-section { margin-top: 24px; }
-  .reports-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .report-tab {
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .report-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
-  .chart-container {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    position: relative;
-    height: 300px;
-  }
-  .chart-title {
-    font-size: 14px;
-    color: var(--muted);
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  .booking-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
   }
 
   .admin-grid {
@@ -376,6 +342,7 @@
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 12px;
+    flex-wrap: wrap;
   }
   .admin-tab {
     background: transparent;
@@ -388,15 +355,56 @@
     cursor: pointer;
     transition: all 0.2s;
   }
-  .admin-tab.active {
-    background: var(--accent);
-    color: white;
+  .admin-tab.active { background: var(--accent); color: white; }
+  .admin-tab-content { display: none; }
+  .admin-tab-content.active { display: block; }
+
+  .reports-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .report-tab {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
   }
-  .admin-tab-content {
-    display: none;
+  .report-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .chart-container {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    height: 300px;
   }
-  .admin-tab-content.active {
-    display: block;
+  .chart-title {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .repair-zone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .repair-zone-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+  .repair-zone-count {
+    font-size: 12px;
+    color: var(--muted);
   }
 </style>
 </head>
@@ -422,6 +430,14 @@
     </div>
 
     <div class="panel">
+      <div class="repair-zone-header">
+        <div class="repair-zone-title">🔧 Ремонтная зона (без подъёмника)</div>
+        <div class="repair-zone-count" id="repairCount">0 работ</div>
+      </div>
+      <div class="list" id="repairZone"></div>
+    </div>
+
+    <div class="panel">
       <h2>📅 Бронирования</h2>
       <div id="bookings"></div>
     </div>
@@ -437,7 +453,6 @@
       <h2>Очередь <span class="badge waiting" id="queue-count">0</span></h2>
       <div class="list" id="queue"></div>
       
-      <!-- Большие кнопки действий -->
       <div class="action-buttons">
         <button class="action-btn order" onclick="openOrderModal()">
           <span class="icon">📋</span>
@@ -447,27 +462,10 @@
           <span class="icon">📅</span>
           <span>Забронировать подъёмник</span>
         </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="reports-section">
-  <div class="panel">
-    <h2>📊 Отчёты</h2>
-    <div class="reports-tabs">
-      <div class="report-tab active" onclick="switchReportTab('daily')">По дням</div>
-      <div class="report-tab" onclick="switchReportTab('weekly')">По неделям</div>
-      <div class="report-tab" onclick="switchReportTab('masters')">По мастерам</div>
-    </div>
-    <div id="reportContent">
-      <div class="chart-container">
-        <div class="chart-title">Загрузка по дням (последние 7 дней)</div>
-        <canvas id="dailyLoadChart"></canvas>
-      </div>
-      <div class="chart-container">
-        <div class="chart-title">Выручка по дням (последние 7 дней)</div>
-        <canvas id="dailyRevenueChart"></canvas>
+        <button class="action-btn repair" onclick="openRepairModal()">
+          <span class="icon">🔧</span>
+          <span>Ремонт без подъёмника</span>
+        </button>
       </div>
     </div>
   </div>
@@ -480,18 +478,27 @@
       <h3>💰 Админ-панель</h3>
       <button class="btn ghost" onclick="closeAdminModal()">✕ Закрыть</button>
     </div>
-    
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="switchAdminTab('finance', this)">💰 Финансы</button>
-      <button class="admin-tab" onclick="switchAdminTab('history', this)">📋 Последние работы</button>
+      <button class="admin-tab" onclick="switchAdminTab('history', this)">📋 Работы</button>
+      <button class="admin-tab" onclick="switchAdminTab('reports', this)">📊 Отчёты</button>
     </div>
-    
     <div id="adminFinance" class="admin-tab-content active">
       <div class="admin-grid" id="adminStats"></div>
     </div>
-    
     <div id="adminHistory" class="admin-tab-content">
       <div class="list" id="adminHistoryList"></div>
+    </div>
+    <div id="adminReports" class="admin-tab-content">
+      <div class="reports-tabs">
+        <div class="report-tab active" onclick="switchReportTab('daily', this)">По дням</div>
+        <div class="report-tab" onclick="switchReportTab('weekly', this)">По неделям</div>
+        <div class="report-tab" onclick="switchReportTab('masters', this)">По мастерам</div>
+      </div>
+      <div id="reportContent">
+        <div class="chart-container"><div class="chart-title">Загрузка по дням (7 дней)</div><canvas id="dailyLoadChart"></canvas></div>
+        <div class="chart-container"><div class="chart-title">Выручка по дням (7 дней)</div><canvas id="dailyRevenueChart"></canvas></div>
+      </div>
     </div>
   </div>
 </div>
@@ -502,18 +509,9 @@
     <h3>👥 Управление мастерами</h3>
     <div class="masters-list" id="mastersList"></div>
     <div style="border-top: 1px solid var(--border); padding-top: 16px;">
-      <div class="form-group">
-        <label>Имя мастера</label>
-        <input id="m-name" placeholder="Петров А.">
-      </div>
-      <div class="form-group">
-        <label>Телефон (опционально)</label>
-        <input id="m-phone" placeholder="+7 999 123-45-67">
-      </div>
-      <div class="form-group">
-        <label>Специализация (опционально)</label>
-        <input id="m-spec" placeholder="Двигатели, ходовая">
-      </div>
+      <div class="form-group"><label>Имя мастера</label><input id="m-name" placeholder="Петров А."></div>
+      <div class="form-group"><label>Телефон</label><input id="m-phone" placeholder="+7 999 123-45-67"></div>
+      <div class="form-group"><label>Специализация</label><input id="m-spec" placeholder="Двигатели, ходовая"></div>
       <div class="modal-actions">
         <button class="btn ghost" onclick="closeMastersModal()">Закрыть</button>
         <button class="btn" onclick="saveMaster()">Сохранить</button>
@@ -526,33 +524,29 @@
 <div class="modal" id="bookingModal">
   <div class="modal-content">
     <h3>📅 Бронирование подъемника</h3>
-    <div class="form-group">
-      <label>Подъёмник</label>
-      <select id="b-post"></select>
-    </div>
-    <div class="form-group">
-      <label>Клиент / Название</label>
-      <input id="b-client" placeholder="Иванов / ТО">
-    </div>
-    <div class="form-group">
-      <label>Дата и время начала</label>
-      <input id="b-start" type="datetime-local">
-    </div>
-    <div class="form-group">
-      <label>Дата и время окончания</label>
-      <input id="b-end" type="datetime-local">
-    </div>
-    <div class="form-group">
-      <label>Стоимость аренды (₽)</label>
-      <input id="b-price" type="number" value="0">
-    </div>
-    <div class="form-group">
-      <label>Комментарий (опционально)</label>
-      <textarea id="b-comment" rows="2"></textarea>
-    </div>
+    <div class="form-group"><label>Подъёмник</label><select id="b-post"></select></div>
+    <div class="form-group"><label>Клиент / Название</label><input id="b-client" placeholder="Иванов / ТО"></div>
+    <div class="form-group"><label>Дата и время начала</label><input id="b-start" type="datetime-local"></div>
+    <div class="form-group"><label>Дата и время окончания</label><input id="b-end" type="datetime-local"></div>
+    <div class="form-group"><label>Стоимость аренды (₽)</label><input id="b-price" type="number" value="0"></div>
+    <div class="form-group"><label>Комментарий</label><textarea id="b-comment" rows="2"></textarea></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeBookingModal()">Отмена</button>
       <button class="btn purple" onclick="saveBooking()">Забронировать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка продления бронирования -->
+<div class="modal" id="extendBookingModal">
+  <div class="modal-content">
+    <h3>⏰ Продлить бронирование</h3>
+    <div class="form-group"><label>Текущее окончание</label><div id="extendCurrentEnd" style="padding:8px; color:var(--purple); font-weight:600;"></div></div>
+    <div class="form-group"><label>Новая дата и время окончания</label><input id="extend-new-end" type="datetime-local"></div>
+    <div class="form-group"><label>Дополнительная стоимость (₽)</label><input id="extend-price" type="number" value="0"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeExtendModal()">Отмена</button>
+      <button class="btn cyan" onclick="saveExtendBooking()">Продлить</button>
     </div>
   </div>
 </div>
@@ -561,38 +555,14 @@
 <div class="modal" id="orderModal">
   <div class="modal-content">
     <h3 id="modalTitle">Новый заказ-наряд</h3>
-    <div class="form-group">
-      <label>Клиент</label>
-      <input id="f-client" placeholder="Иванов И.И.">
-    </div>
-    <div class="form-group">
-      <label>Телефон клиента</label>
-      <input id="f-phone" placeholder="+7 ...">
-    </div>
-    <div class="form-group">
-      <label>Автомобиль</label>
-      <input id="f-car" placeholder="Toyota Camry, А123БВ 77">
-    </div>
-    <div class="form-group">
-      <label>Услуги</label>
-      <textarea id="f-services" rows="2" placeholder="Замена масла, фильтров"></textarea>
-    </div>
-    <div class="form-group">
-      <label>Мастер (опционально)</label>
-      <select id="f-master"></select>
-    </div>
-    <div class="form-group">
-      <label>Стоимость (₽)</label>
-      <input id="f-price" type="number" value="0">
-    </div>
-    <div class="form-group">
-      <label>Подъёмник</label>
-      <select id="f-post"></select>
-    </div>
-    <div class="form-group">
-      <label>⏰ Выдать автомобиль к (опционально)</label>
-      <input id="f-deadline" type="datetime-local">
-    </div>
+    <div class="form-group"><label>Клиент</label><input id="f-client" placeholder="Иванов И.И."></div>
+    <div class="form-group"><label>Телефон клиента</label><input id="f-phone" placeholder="+7 ..."></div>
+    <div class="form-group"><label>Автомобиль</label><input id="f-car" placeholder="Toyota Camry, А123БВ 77"></div>
+    <div class="form-group"><label>Услуги</label><textarea id="f-services" rows="2" placeholder="Замена масла, фильтров"></textarea></div>
+    <div class="form-group"><label>Мастер</label><select id="f-master"></select></div>
+    <div class="form-group"><label>Стоимость (₽)</label><input id="f-price" type="number" value="0"></div>
+    <div class="form-group"><label>Подъёмник</label><select id="f-post"></select></div>
+    <div class="form-group"><label>⏰ Выдать автомобиль к</label><input id="f-deadline" type="datetime-local"></div>
     <div class="modal-actions">
       <button class="btn ghost" onclick="closeModal()">Отмена</button>
       <button class="btn" onclick="saveOrder()">Сохранить</button>
@@ -600,8 +570,25 @@
   </div>
 </div>
 
+<!-- Модалка ремонта без подъёмника -->
+<div class="modal" id="repairModal">
+  <div class="modal-content">
+    <h3>🔧 Ремонт без подъёмника</h3>
+    <div class="form-group"><label>Клиент</label><input id="r-client" placeholder="Иванов И.И."></div>
+    <div class="form-group"><label>Телефон клиента</label><input id="r-phone" placeholder="+7 ..."></div>
+    <div class="form-group"><label>Автомобиль</label><input id="r-car" placeholder="Toyota Camry, А123БВ 77"></div>
+    <div class="form-group"><label>Услуги</label><textarea id="r-services" rows="2" placeholder="Диагностика, регулировка"></textarea></div>
+    <div class="form-group"><label>Мастер</label><select id="r-master"></select></div>
+    <div class="form-group"><label>Стоимость (₽)</label><input id="r-price" type="number" value="0"></div>
+    <div class="form-group"><label>⏰ Выдать автомобиль к</label><input id="r-deadline" type="datetime-local"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeRepairModal()">Отмена</button>
+      <button class="btn cyan" onclick="saveRepair()">Добавить в ремонтную зону</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ===== Конфигурация Firebase =====
 const firebaseConfig = {
   apiKey: "AIzaSyALbJZSZdfNqtc47gIcDp_DmEVcsTp2_Mw",
   authDomain: "dream-garage-4bff9.firebaseapp.com",
@@ -615,7 +602,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ===== Состояние =====
 let state = {
   posts: [
     { id: 1, name: 'Подъёмник 1', type: 'standard', status: 'free' },
@@ -634,7 +620,6 @@ let state = {
   dailyStats: {}
 };
 
-// ===== Firebase слушатели =====
 function initFirebaseListeners() {
   const connectedRef = db.ref('.info/connected');
   connectedRef.on('value', (snap) => {
@@ -680,7 +665,6 @@ function initFirebaseListeners() {
   });
 }
 
-// ===== Firebase операции =====
 function updatePost(postId, updates) { db.ref(`posts/${postId}`).update(updates); }
 function initPosts() {
   db.ref('posts').once('value', (snap) => {
@@ -692,6 +676,7 @@ function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(upda
 function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
 function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
 function addBooking(booking) { db.ref(`bookings/${booking.id}`).set(booking); }
+function updateBooking(bookingId, updates) { db.ref(`bookings/${bookingId}`).update(updates); }
 function removeBooking(bookingId) { db.ref(`bookings/${bookingId}`).remove(); }
 function updateStats() {
   db.ref('stats').set({
@@ -705,7 +690,6 @@ function addMaster(master) { db.ref(`masters/${master.id}`).set(master); }
 function updateMaster(masterId, updates) { db.ref(`masters/${masterId}`).update(updates); }
 function removeMaster(masterId) { db.ref(`masters/${masterId}`).remove(); }
 
-// ===== Утилиты =====
 function getTodayKey() { return new Date().toISOString().split('T')[0]; }
 function getDateKey(date) { return date.toISOString().split('T')[0]; }
 function formatDate(dateStr) {
@@ -766,7 +750,6 @@ function updateDailyStats(order) {
   updateStats();
 }
 
-// ===== Графики =====
 let charts = {};
 function initCharts() {
   Chart.defaults.color = '#8b949e';
@@ -831,10 +814,10 @@ function renderMastersReports() {
 }
 
 let currentReportTab = 'daily';
-function switchReportTab(tab) {
+function switchReportTab(tab, el) {
   currentReportTab = tab;
   document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+  el.classList.add('active');
   if (tab === 'daily') {
     document.getElementById('reportContent').innerHTML = `<div class="chart-container"><div class="chart-title">Загрузка по дням (7 дней)</div><canvas id="dailyLoadChart"></canvas></div><div class="chart-container"><div class="chart-title">Выручка по дням (7 дней)</div><canvas id="dailyRevenueChart"></canvas></div>`;
     renderDailyReports();
@@ -844,8 +827,12 @@ function switchReportTab(tab) {
   } else if (tab === 'masters') renderMastersReports();
 }
 
-// ===== Админ-панель =====
-function openAdminModal() { renderAdminStats(); renderAdminHistory(); document.getElementById('adminModal').classList.add('open'); }
+function openAdminModal() {
+  renderAdminStats();
+  renderAdminHistory();
+  renderDailyReports();
+  document.getElementById('adminModal').classList.add('open');
+}
 function closeAdminModal() { document.getElementById('adminModal').classList.remove('open'); }
 
 function switchAdminTab(tab, el) {
@@ -853,6 +840,13 @@ function switchAdminTab(tab, el) {
   document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  if (tab === 'reports') {
+    setTimeout(() => {
+      if (currentReportTab === 'daily') renderDailyReports();
+      else if (currentReportTab === 'weekly') renderWeeklyReports();
+      else if (currentReportTab === 'masters') renderMastersReports();
+    }, 100);
+  }
 }
 
 function renderAdminStats() {
@@ -872,11 +866,11 @@ function renderAdminHistory() {
   if (!state.history.length) { el.innerHTML = '<div class="empty">Пока нет завершённых работ</div>'; return; }
   el.innerHTML = state.history.slice(0, 20).map(h => {
     const masterName = h.masterId ? (state.masters.find(m => String(m.id) === String(h.masterId))?.name || h.master) : h.master;
-    return `<div class="item"><div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div><div class="item-main">${h.car}</div><div class="item-sub">${h.services} · ${masterName || '—'} · ${h.price} ₽</div></div>`;
+    const zone = h.postId === 0 ? '🔧 Ремонтная зона' : (state.posts.find(p => p.id == h.postId)?.name || '—');
+    return `<div class="item"><div class="item-top"><span>#${h.id}</span><span>${h.finishedAt}</span></div><div class="item-main">${h.car}</div><div class="item-sub">${h.services} · ${masterName || '—'} · ${zone} · ${h.price} ₽</div></div>`;
   }).join('');
 }
 
-// ===== Рендер =====
 const statusLabels = { free: 'Свободен', busy: 'Занят', waiting: 'Ожидание' };
 
 function renderStats() {
@@ -914,6 +908,49 @@ function renderPosts() {
   }).join('');
 }
 
+// ===== Ремонтная зона (без подъёмника) =====
+function renderRepairZone() {
+  const el = document.getElementById('repairZone');
+  const repairOrders = state.orders.filter(o => o.postId === 0 || o.postId === null);
+  
+  document.getElementById('repairCount').textContent = `${repairOrders.length} ${repairOrders.length === 1 ? 'работа' : 'работ'}`;
+  
+  if (!repairOrders.length) {
+    el.innerHTML = '<div class="empty">Ремонтная зона свободна</div>';
+    return;
+  }
+  
+  el.innerHTML = repairOrders.map(o => {
+    const elapsed = o.startedAt ? Math.round((Date.now() - o.startedAt) / 60000) : 0;
+    let deadlineHtml = '';
+    if (o.deadline) {
+      const cls = getDeadlineClass(o.deadline);
+      const prefix = cls === 'err' ? '⚠ Просрочено: ' : '⏱ Осталось: ';
+      deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
+    }
+    const statusBadge = o.status === 'in-progress' 
+      ? '<span class="badge busy" style="margin-left:6px;">В работе</span>' 
+      : '<span class="badge waiting" style="margin-left:6px;">Ожидает</span>';
+    return `
+      <div class="item repair-zone">
+        <div class="item-top">
+          <span>#${o.id} ${deadlineHtml}${statusBadge}</span>
+          <span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span>
+        </div>
+        <div class="item-main">${o.car}</div>
+        <div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div>
+        <div class="item-sub">👷 ${o.master || 'Не назначен'} · ${o.price} ₽</div>
+        ${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn small ok" onclick="completeOrder(${o.id})">✓ Завершить</button>
+          <button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">✎ Изменить</button>
+          <button class="btn small danger" onclick="cancelOrder(${o.id})">✕ Отменить</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function renderBookings() {
   const el = document.getElementById('bookings');
   const now = Date.now();
@@ -922,14 +959,28 @@ function renderBookings() {
   el.innerHTML = activeBookings.map(b => {
     const post = state.posts.find(p => p.id == b.postId);
     const statusText = b.start > now ? 'Предстоит' : 'Идёт сейчас';
-    return `<div class="booking-item"><div class="booking-time">📅 ${formatDateTime(b.start)} — ${formatDateTime(b.end)}</div><div class="item-main">${b.client}</div><div class="item-sub">${post?.name || '—'} · ${b.price} ₽ · <span style="color: var(--purple);">${statusText}</span></div>${b.comment ? `<div class="item-sub">${b.comment}</div>` : ''}<div style="margin-top:8px;"><button class="btn small danger" onclick="cancelBooking(${b.id})">Отменить</button></div></div>`;
+    return `
+      <div class="booking-item">
+        <div class="booking-time">📅 ${formatDateTime(b.start)} — ${formatDateTime(b.end)}</div>
+        <div class="item-main">${b.client}</div>
+        <div class="item-sub">${post?.name || '—'} · ${b.price} ₽ · <span style="color: var(--purple);">${statusText}</span></div>
+        ${b.comment ? `<div class="item-sub">${b.comment}</div>` : ''}
+        <div class="booking-actions">
+          <button class="btn small ok" onclick="completeBookingNoPay(${b.id})">✓ Без оплаты</button>
+          <button class="btn small cyan" onclick="completeBookingWithPay(${b.id})">💰 Завершить с оплатой</button>
+          <button class="btn small" onclick="openExtendModal(${b.id})">⏰ Продлить</button>
+          <button class="btn small danger" onclick="cancelBooking(${b.id})">✕ Отменить</button>
+        </div>
+      </div>
+    `;
   }).join('');
 }
 
 function renderOrders() {
   const el = document.getElementById('orders');
-  if (!state.orders.length) { el.innerHTML = '<div class="empty">Нет активных заказов</div>'; return; }
-  el.innerHTML = state.orders.map(o => {
+  const regularOrders = state.orders.filter(o => o.postId !== 0 && o.postId !== null);
+  if (!regularOrders.length) { el.innerHTML = '<div class="empty">Нет активных заказов</div>'; return; }
+  el.innerHTML = regularOrders.map(o => {
     const post = state.posts.find(p => p.id === o.postId);
     const elapsed = o.startedAt ? Math.round((Date.now() - o.startedAt) / 60000) : 0;
     let deadlineHtml = '';
@@ -939,7 +990,7 @@ function renderOrders() {
       deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
     }
     const statusBadge = o.status === 'in-progress' ? '<span class="badge busy" style="margin-left:6px;">В работе</span>' : '<span class="badge waiting" style="margin-left:6px;">Ожидает мастера</span>';
-    return `<div class="item"><div class="item-top"><span>#${o.id} ${deadlineHtml}${statusBadge}</span><span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span></div><div class="item-main">${o.car}</div><div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div><div class="item-sub">${post?.name || '—'} · ${o.master || 'Не назначен'} · ${o.price} ₽</div>${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}<div style="margin-top:8px; display:flex; gap:6px;"><button class="btn small" onclick="completeOrder(${o.id})">Завершить</button><button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">Изменить</button><button class="btn small danger" onclick="cancelOrder(${o.id})">Отменить</button></div></div>`;
+    return `<div class="item"><div class="item-top"><span>#${o.id} ${deadlineHtml}${statusBadge}</span><span>${o.startedAt ? elapsed + ' мин' : 'Ожидает'}</span></div><div class="item-main">${o.car}</div><div class="item-sub">${o.client} ${o.phone ? '· ' + o.phone : ''} · ${o.services}</div><div class="item-sub">${post?.name || '—'} · ${o.master || 'Не назначен'} · ${o.price} ₽</div>${o.deadline ? `<div class="item-sub">Выдать к: ${new Date(o.deadline).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;"><button class="btn small ok" onclick="completeOrder(${o.id})">Завершить</button><button class="btn small ghost" onclick="openOrderModal(state.orders.find(x=>x.id===${o.id}))">Изменить</button><button class="btn small danger" onclick="cancelOrder(${o.id})">Отменить</button></div></div>`;
   }).join('');
 }
 
@@ -953,6 +1004,7 @@ function renderQueue() {
 function render() {
   renderStats();
   renderPosts();
+  renderRepairZone();
   renderBookings();
   renderOrders();
   renderQueue();
@@ -1005,6 +1057,50 @@ function saveBooking() {
   updateStats();
   closeBookingModal();
 }
+
+// ✅ Завершить без оплаты - вычитаем из выручки и удаляем
+function completeBookingNoPay(id) {
+  if (!confirm('Завершить бронирование без оплаты? Деньги будут возвращены.')) return;
+  const booking = state.bookings.find(b => b.id == id);
+  if (booking) {
+    state.bookingRevenue -= booking.price;
+    updateStats();
+  }
+  removeBooking(id);
+}
+
+// ✅ Завершить досрочно с оплатой - просто удаляем (деньги уже учтены)
+function completeBookingWithPay(id) {
+  if (!confirm('Завершить бронирование досрочно? Оплата уже учтена.')) return;
+  removeBooking(id);
+}
+
+// ✅ Продлить бронирование
+let extendingBookingId = null;
+function openExtendModal(id) {
+  const booking = state.bookings.find(b => b.id == id);
+  if (!booking) return;
+  extendingBookingId = id;
+  document.getElementById('extendCurrentEnd').textContent = formatDateTime(booking.end);
+  document.getElementById('extend-new-end').value = toLocalDatetime(booking.end + 60 * 60 * 1000);
+  document.getElementById('extend-price').value = 0;
+  document.getElementById('extendBookingModal').classList.add('open');
+}
+function closeExtendModal() { document.getElementById('extendBookingModal').classList.remove('open'); extendingBookingId = null; }
+function saveExtendBooking() {
+  if (!extendingBookingId) return;
+  const newEnd = new Date(document.getElementById('extend-new-end').value).getTime();
+  const additionalPrice = parseInt(document.getElementById('extend-price').value) || 0;
+  const booking = state.bookings.find(b => b.id == extendingBookingId);
+  if (!booking) return;
+  if (newEnd <= booking.start) { alert('Новое время окончания должно быть позже начала'); return; }
+  
+  updateBooking(extendingBookingId, { end: newEnd, price: booking.price + additionalPrice });
+  state.bookingRevenue += additionalPrice;
+  updateStats();
+  closeExtendModal();
+}
+
 function cancelBooking(id) {
   if (!confirm('Отменить бронирование?')) return;
   const booking = state.bookings.find(b => b.id == id);
@@ -1012,7 +1108,7 @@ function cancelBooking(id) {
   removeBooking(id);
 }
 
-// ===== Заказы =====
+// ===== Заказ-наряды =====
 let editingOrder = null;
 function openOrderModal(order = null) {
   editingOrder = order;
@@ -1071,17 +1167,14 @@ function completeOrder(id) {
   state.revenue += o.price;
   state.servedToday++;
   removeOrder(id);
-  updatePost(o.postId, { status: 'free' });
+  if (o.postId && o.postId !== 0) updatePost(o.postId, { status: 'free' });
   updateStats();
-  if (currentReportTab === 'daily') renderDailyReports();
-  else if (currentReportTab === 'weekly') renderWeeklyReports();
-  else if (currentReportTab === 'masters') renderMastersReports();
 }
 function cancelOrder(id) {
   if (!confirm('Отменить заказ?')) return;
   const o = state.orders.find(x => x.id == id);
   removeOrder(id);
-  updatePost(o.postId, { status: 'free' });
+  if (o.postId && o.postId !== 0) updatePost(o.postId, { status: 'free' });
 }
 function startFromQueue(id) {
   const q = state.queue.find(x => x.id === id);
@@ -1100,22 +1193,52 @@ function cycleStatus(postId) {
   updatePost(postId, { status: cycle[(cycle.indexOf(p.status) + 1) % cycle.length] });
 }
 
-// ===== Часы =====
+// ===== Ремонт без подъёмника =====
+function openRepairModal() {
+  document.getElementById('r-master').innerHTML = '<option value="">— не назначен —</option>' + state.masters.map(m => `<option value="${m.name}">${m.name}${m.spec ? ' (' + m.spec + ')' : ''}</option>`).join('');
+  ['r-client','r-phone','r-car','r-services','r-deadline'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('r-master').value = '';
+  document.getElementById('r-price').value = 0;
+  document.getElementById('repairModal').classList.add('open');
+}
+function closeRepairModal() { document.getElementById('repairModal').classList.remove('open'); }
+function saveRepair() {
+  const masterName = document.getElementById('r-master').value;
+  const master = state.masters.find(m => m.name === masterName);
+  const deadlineVal = document.getElementById('r-deadline').value;
+  const data = {
+    id: Date.now(),
+    client: document.getElementById('r-client').value.trim(),
+    phone: document.getElementById('r-phone').value.trim(),
+    car: document.getElementById('r-car').value.trim(),
+    services: document.getElementById('r-services').value.trim(),
+    master: masterName || null,
+    masterId: master ? String(master.id) : null,
+    price: parseInt(document.getElementById('r-price').value) || 0,
+    postId: 0,  // ✅ Специальный ID для ремонтной зоны
+    startedAt: Date.now(),
+    deadline: deadlineVal ? new Date(deadlineVal).getTime() : null,
+    status: 'in-progress'
+  };
+  if (!data.client || !data.car) { alert('Заполните клиента и авто'); return; }
+  if (data.deadline && data.deadline <= Date.now()) { if (!confirm('Указанное время уже прошло. Продолжить?')) return; }
+  addOrder(data);
+  closeRepairModal();
+}
+
 function tickClock() {
   const d = new Date();
   document.getElementById('clock').textContent = d.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'}) + ' · ' + d.toLocaleTimeString('ru-RU');
 }
-function updateTimers() { renderStats(); renderPosts(); renderOrders(); renderBookings(); }
+function updateTimers() { renderStats(); renderPosts(); renderOrders(); renderBookings(); renderRepairZone(); }
 setInterval(tickClock, 1000);
 setInterval(updateTimers, 1000);
 tickClock();
 
-// ===== Старт =====
 initCharts();
 initFirebaseListeners();
 initPosts();
 render();
-renderDailyReports();
 </script>
 </body>
 </html>
