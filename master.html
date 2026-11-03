@@ -30,10 +30,9 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding-bottom: 70px;
+    padding-bottom: 20px;
     -webkit-tap-highlight-color: transparent;
   }
-  
   header {
     background: var(--panel);
     padding: 16px;
@@ -57,6 +56,7 @@
     padding: 8px 12px;
     border-radius: 8px;
     font-size: 14px;
+    max-width: 180px;
   }
   .sync-status {
     font-size: 11px;
@@ -67,7 +67,6 @@
   }
   .sync-status.connected { color: var(--ok); }
   .sync-status.disconnected { color: var(--err); }
-  
   .tabs { display: flex; gap: 8px; }
   .tab {
     flex: 1;
@@ -91,9 +90,7 @@
     font-size: 11px;
     margin-left: 4px;
   }
-  
   .content { padding: 16px; }
-  
   .order-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -106,7 +103,6 @@
   .order-card.new { border-left-color: var(--info); }
   .order-card.in-progress { border-left-color: var(--warn); }
   .order-card.completed { border-left-color: var(--ok); }
-  
   .order-header {
     display: flex;
     justify-content: space-between;
@@ -115,12 +111,10 @@
   }
   .order-id { font-size: 12px; color: var(--muted); }
   .order-time { font-size: 12px; color: var(--muted); }
-  
   .order-main { margin-bottom: 12px; }
   .order-car { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
   .order-client { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
   .order-services { font-size: 13px; color: var(--text); line-height: 1.4; }
-  
   .order-footer {
     display: flex;
     justify-content: space-between;
@@ -132,7 +126,6 @@
   }
   .order-price { font-size: 16px; font-weight: 700; color: var(--accent); }
   .order-actions { display: flex; gap: 8px; }
-  
   .deadline-badge {
     display: inline-block;
     padding: 3px 8px;
@@ -146,7 +139,6 @@
   .deadline-badge.warn { background: rgba(245,158,11,0.2); color: var(--warn); }
   .deadline-badge.err { background: rgba(239,68,68,0.2); color: var(--err); animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: 0.6; } }
-  
   .btn {
     background: var(--accent);
     color: white;
@@ -161,9 +153,7 @@
   .btn:active { opacity: 0.7; }
   .btn.small { padding: 8px 12px; font-size: 13px; }
   .btn.ok { background: var(--ok); }
-  .btn.warn { background: var(--warn); }
   .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-  
   .badge {
     display: inline-block;
     padding: 4px 10px;
@@ -175,10 +165,8 @@
   .badge.new { background: rgba(99,102,241,0.2); color: var(--info); }
   .badge.in-progress { background: rgba(245,158,11,0.2); color: var(--warn); }
   .badge.completed { background: rgba(16,185,129,0.2); color: var(--ok); }
-  
   .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
   .empty-icon { font-size: 48px; margin-bottom: 12px; }
-  
   .modal {
     display: none;
     position: fixed;
@@ -213,7 +201,7 @@
 <header>
   <div class="header-top">
     <h1>🏎️ <span>Dream</span> Garage</h1>
-    <div>
+    <div style="display:flex; align-items:center;">
       <select class="master-select" id="masterSelect" onchange="changeMaster()">
         <option value="">Мастер...</option>
       </select>
@@ -222,10 +210,10 @@
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('new', this)">
-      Новые <span class="count" id="newCount">0</span>
+      Доступные <span class="count" id="newCount">0</span>
     </div>
     <div class="tab" onclick="switchTab('in-progress', this)">
-      В работе <span class="count" id="progressCount">0</span>
+      Мои <span class="count" id="progressCount">0</span>
     </div>
     <div class="tab" onclick="switchTab('completed', this)">
       Завершённые <span class="count" id="completedCount">0</span>
@@ -246,32 +234,28 @@
 <script>
 // ===== ВАЖНО: Вставьте сюда свою конфигурацию Firebase =====
 const firebaseConfig = {
-  apiKey: "AIzaSyALbJZS2dfNqtC47glcDp_DmEVCsTp2_Mw",
+  apiKey: "AIzaSyALbJZSZdfNqtc47gIcDp_DmEVcsTp2_Mw",
   authDomain: "dream-garage-4bff9.firebaseapp.com",
   databaseURL: "https://dream-garage-4bff9-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "dream-garage-4bff9",
   storageBucket: "dream-garage-4bff9.firebasestorage.app",
   messagingSenderId: "1043595691448",
-  appId: "1:1043595691448:web:7bd610400cf417010e7b4d"
+  appId: "1:1043595691448:web:7bd610400cf41701e7b4d"
 };
-
-// Initialize Firebase
-//const app = initializeApp(firebaseConfig);
-
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const MASTER_KEY = 'dg_master_id';
+const MASTER_NAME_KEY = 'dg_master_name';
 let currentMaster = localStorage.getItem(MASTER_KEY) || '';
-let currentMasterName = localStorage.getItem('dg_master_name') || '';
+let currentMasterName = localStorage.getItem(MASTER_NAME_KEY) || '';
 let currentTab = 'new';
 let allOrders = [];
 let allHistory = [];
 let allPosts = [];
 let allMasters = [];
 
-// ===== Инициализация =====
 function init() {
   const connectedRef = db.ref('.info/connected');
   connectedRef.on('value', (snap) => {
@@ -325,17 +309,15 @@ function changeMaster() {
   const master = allMasters.find(m => String(m.id) === String(currentMaster));
   currentMasterName = master ? master.name : '';
   localStorage.setItem(MASTER_KEY, currentMaster);
-  localStorage.setItem('dg_master_name', currentMasterName);
+  localStorage.setItem(MASTER_NAME_KEY, currentMasterName);
   render();
 }
 
-// ===== Firebase операции =====
 function updateOrder(orderId, updates) { db.ref(`orders/${orderId}`).update(updates); }
 function updatePost(postId, updates) { db.ref(`posts/${postId}`).update(updates); }
 function addToHistory(order) { db.ref(`history/${order.id}`).set(order); }
 function removeOrder(orderId) { db.ref(`orders/${orderId}`).remove(); }
 
-// ===== Рендер =====
 function switchTab(tab, el) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -374,7 +356,7 @@ function getDeadlineClass(deadlineTs) {
 }
 
 function getStatusLabel(status) {
-  const labels = { 'new': 'Новый', 'in-progress': 'В работе', 'completed': 'Завершён' };
+  const labels = { 'new': 'Доступен', 'in-progress': 'В работе', 'completed': 'Завершён' };
   return labels[status] || status;
 }
 
@@ -389,36 +371,38 @@ function render() {
     return;
   }
   
-  const orders = allOrders.filter(o => o.master === currentMasterName || !o.master);
-  const history = allHistory.filter(h => h.master === currentMasterName || !h.master);
+  // ✅ Доступные заказы — все новые (без мастера или любой новый)
+  const availableOrders = allOrders.filter(o => o.status === 'new' || !o.status);
+  // ✅ Мои заказы — те, где я мастер и статус in-progress
+  const myOrders = allOrders.filter(o => o.master === currentMasterName && o.status === 'in-progress');
+  // ✅ Завершённые — история
+  const completed = allHistory.filter(h => h.master === currentMasterName || !h.master);
   
-  const newOrders = orders.filter(o => !o.startedAt || o.status === 'new');
-  const inProgress = orders.filter(o => o.status === 'in-progress');
-  const completed = history;
-  
-  document.getElementById('newCount').textContent = newOrders.length;
-  document.getElementById('progressCount').textContent = inProgress.length;
+  document.getElementById('newCount').textContent = availableOrders.length;
+  document.getElementById('progressCount').textContent = myOrders.length;
   document.getElementById('completedCount').textContent = completed.length;
   
   const content = document.getElementById('content');
   let items = [];
   
-  if (currentTab === 'new') items = newOrders;
-  else if (currentTab === 'in-progress') items = inProgress;
+  if (currentTab === 'new') items = availableOrders;
+  else if (currentTab === 'in-progress') items = myOrders;
   else if (currentTab === 'completed') items = completed;
   
   if (!items.length) {
+    const emptyText = currentTab === 'new' ? 'Нет доступных заказов' : 
+                      currentTab === 'in-progress' ? 'Нет заказов в работе' : 'Нет завершённых';
     content.innerHTML = `
       <div class="empty">
         <div class="empty-icon">📋</div>
-        <div>Нет нарядов</div>
+        <div>${emptyText}</div>
       </div>
     `;
     return;
   }
   
   content.innerHTML = items.map(o => {
-    const status = o.status || (o.startedAt ? 'in-progress' : 'new');
+    const status = o.status || 'new';
     const time = o.startedAt ? formatTime(Date.now() - o.startedAt) : '—';
     let deadlineHtml = '';
     if (o.deadline && status !== 'completed') {
@@ -426,6 +410,8 @@ function render() {
       const prefix = cls === 'err' ? '⚠ ' : '⏱ ';
       deadlineHtml = `<span class="deadline-badge ${cls}">${prefix}${formatCountdown(o.deadline)}</span>`;
     }
+    
+    const post = allPosts.find(p => p.id == o.postId);
     
     return `
       <div class="order-card ${status}" onclick="showDetails(${o.id})">
@@ -440,11 +426,12 @@ function render() {
           <div class="order-car">${o.car}</div>
           <div class="order-client">${o.client} ${o.phone ? '· ' + o.phone : ''}</div>
           <div class="order-services">${o.services}</div>
+          ${post ? `<div class="order-client" style="margin-top:6px;">📍 ${post.name}</div>` : ''}
         </div>
         <div class="order-footer">
           <div class="order-price">${o.price} ₽</div>
           <div class="order-actions">
-            ${status === 'new' ? `<button class="btn small ok" onclick="event.stopPropagation(); startWork(${o.id})">▶ Начать</button>` : ''}
+            ${status === 'new' ? `<button class="btn small ok" onclick="event.stopPropagation(); takeOrder(${o.id})">🤝 Взять заказ</button>` : ''}
             ${status === 'in-progress' ? `<button class="btn small ok" onclick="event.stopPropagation(); completeWork(${o.id})">✓ Завершить</button>` : ''}
           </div>
         </div>
@@ -458,7 +445,7 @@ function showDetails(orderId) {
   if (!order) return;
   
   const post = allPosts.find(p => p.id == order.postId);
-  const status = order.status || (order.startedAt ? 'in-progress' : 'new');
+  const status = order.status || 'new';
   
   document.getElementById('modalTitle').textContent = `Наряд #${order.id}`;
   document.getElementById('modalBody').innerHTML = `
@@ -506,7 +493,7 @@ function showDetails(orderId) {
   
   let actions = `<button class="btn ghost" onclick="closeModal()">Закрыть</button>`;
   if (status === 'new') {
-    actions += `<button class="btn ok" onclick="startWork(${order.id}); closeModal()">▶ Начать</button>`;
+    actions += `<button class="btn ok" onclick="takeOrder(${order.id}); closeModal()">🤝 Взять заказ</button>`;
   } else if (status === 'in-progress') {
     actions += `<button class="btn ok" onclick="completeWork(${order.id}); closeModal()">✓ Завершить</button>`;
   }
@@ -519,14 +506,18 @@ function closeModal() {
   document.getElementById('detailModal').classList.remove('open');
 }
 
-function startWork(orderId) {
+// ✅ Новая функция: мастер берёт заказ
+function takeOrder(orderId) {
   const order = allOrders.find(o => o.id == orderId);
   if (!order) return;
+  
+  if (!confirm(`Взять заказ #${order.id}?\n${order.car}\n${order.services}`)) return;
   
   updateOrder(orderId, {
     startedAt: Date.now(),
     status: 'in-progress',
-    master: currentMasterName
+    master: currentMasterName,
+    masterId: String(currentMaster)
   });
   
   if (order.postId) {
@@ -544,6 +535,7 @@ function completeWork(orderId) {
     ...order,
     status: 'completed',
     master: order.master || currentMasterName,
+    masterId: order.masterId || String(currentMaster),
     finishedAt: new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'})
   };
   
@@ -554,7 +546,7 @@ function completeWork(orderId) {
     updatePost(order.postId, { status: 'free' });
   }
   
-  // Обновляем статистику
+  // ✅ Обновляем статистику с ID мастера вместо имени
   db.ref('stats').once('value', (snapshot) => {
     const data = snapshot.val() || { revenue: 0, servedToday: 0, dailyStats: {} };
     const today = new Date().toISOString().split('T')[0];
@@ -568,9 +560,10 @@ function completeWork(orderId) {
     data.dailyStats[today].revenue += order.price || 0;
     data.dailyStats[today].orders += 1;
     
-    const master = order.master || currentMasterName || 'Не назначен';
-    if (!data.dailyStats[today].masters[master]) data.dailyStats[today].masters[master] = 0;
-    data.dailyStats[today].masters[master] += order.price || 0;
+    // ✅ Используем ID мастера как ключ (безопасно для Firebase)
+    const masterId = order.masterId || String(currentMaster) || 'unassigned';
+    if (!data.dailyStats[today].masters[masterId]) data.dailyStats[today].masters[masterId] = 0;
+    data.dailyStats[today].masters[masterId] += order.price || 0;
     
     db.ref('stats').set(data);
   });
